@@ -431,3 +431,379 @@ function showDetail(id) {
 
 // Init
 showOverview();
+
+/* ══════════════════════════════════════
+   TAB SWITCHING
+══════════════════════════════════════ */
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + tabId).classList.add('active');
+  document.getElementById('content-' + tabId).classList.add('active');
+  if (tabId === 'guides') {
+    document.getElementById('guideDetail').style.display = 'none';
+    document.getElementById('guidesGrid').style.display = 'grid';
+  }
+}
+
+/* ══════════════════════════════════════
+   GUIDE DETAIL CONTENT
+══════════════════════════════════════ */
+const guideContent = {
+
+  cicd: `
+    <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
+    <div class="guide-card-tag" style="color:#bb86fc;border-color:rgba(187,134,252,0.3);margin-bottom:0.8rem">CI/CD Pipeline</div>
+    <h2>CI/CD với GitHub Actions + Docker + Docker Hub + VPS</h2>
+    <p class="guide-subtitle">Kiến trúc chuẩn best practice CI/CD hiện đại — Source code không build trên VPS, VPS không chứa secret.</p>
+
+    <div class="thesis-quote" style="margin-bottom:2rem">
+      <strong>Kiến trúc tổng quan:</strong><br>
+      GitHub → GitHub Actions (CI) → Build Docker image → Push lên Docker Hub (PRIVATE) → VPS (CD) → docker-compose pull → docker-compose up -d
+    </div>
+
+    <div class="guide-section-title">⚙️ Ưu điểm kiến trúc</div>
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(187,134,252,0.15);color:#bb86fc">✓</div>
+        <div class="step-body"><p><strong style="color:#e2e8f0">CI là nơi duy nhất tạo artifact (Docker image)</strong> — không build trên VPS, tránh lệ thuộc môi trường, reproducible build, dễ scale, dễ rollback.</p></div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(187,134,252,0.15);color:#bb86fc">✓</div>
+        <div class="step-body"><p><strong style="color:#e2e8f0">Image private trên Docker Hub</strong> — không lộ source code, VPS chỉ cần docker pull, dễ audit và version bằng tag (:sha, :v1.2.3, :latest).</p></div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(187,134,252,0.15);color:#bb86fc">✓</div>
+        <div class="step-body"><p><strong style="color:#e2e8f0">VPS chỉ là runtime</strong> — không chứa source code, không chứa secret trong git. Khuyến nghị tag image = commit SHA.</p></div>
+      </div>
+    </div>
+
+    <div class="guide-section-title">🖥️ Cấu hình trên máy Local (Docker Desktop)</div>
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B1</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">LOCAL</span>
+          <p>Tải và cài đặt Docker Desktop trên máy tính.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B2</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">BROWSER</span>
+          <p>Vào Docker Hub tạo Repo mới tương ứng với project.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="guide-section-title">🔑 Cấu hình SSH Key cho GitHub Actions</div>
+    <div class="warning-block"><strong>⚠️ Lưu ý quan trọng:</strong> File ~/.ssh/authorized_keys chỉ chứa <strong>public key</strong> (bắt đầu bằng ssh-ed25519 AAAA...). Tuyệt đối KHÔNG paste private key (bắt đầu -----BEGIN OPENSSH PRIVATE KEY-----) lên VPS.</div>
+    <div class="step-list" style="margin-top:1.2rem">
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(130,177,255,0.15);color:#82b1ff">B1</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#82b1ff;border-color:rgba(130,177,255,0.3)">LOCAL</span>
+          <p>Tạo SSH key pair trên máy local (Windows PowerShell / Git Bash):</p>
+          <div class="cmd-block">ssh-keygen -t ed25519 -C "github-actions-deploy"
+# Đặt tên file: github-actions-homenest
+# Private key: github-actions-homenest  → GIỮ BÍ MẬT
+# Public key:  github-actions-homenest.pub → copy lên VPS</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(130,177,255,0.15);color:#82b1ff">B2</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#82b1ff;border-color:rgba(130,177,255,0.3)">VPS</span>
+          <p>Thêm public key vào VPS:</p>
+          <div class="cmd-block">nano ~/.ssh/authorized_keys
+# Dán PUBLIC key (.pub) vào cuối file, lưu và thoát.
+
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(130,177,255,0.15);color:#82b1ff">B3</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#82b1ff;border-color:rgba(130,177,255,0.3)">GITHUB</span>
+          <p>Thêm private key vào GitHub Secrets: <br><strong>Repo → Settings → Secrets and variables → Actions → New repository secret</strong></p>
+          <div class="note-block"><strong>Name:</strong> VPS_SSH_KEY<br><strong>Value:</strong> Dán toàn bộ nội dung private key (file không có .pub)</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(130,177,255,0.15);color:#82b1ff">B4</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#82b1ff;border-color:rgba(130,177,255,0.3)">GITHUB ACTIONS WORKFLOW</span>
+          <p>Cấu hình bước deploy trong file workflow:</p>
+          <div class="cmd-block">- name: Deploy to VPS
+  uses: appleboy/ssh-action@v1.0.3
+  with:
+    host: \${{ secrets.SSH_HOST }}
+    username: \${{ secrets.SSH_USER }}
+    key: \${{ secrets.VPS_SSH_KEY }}
+    script: |
+      cd /home/ubuntu/homenest
+      docker compose pull
+      docker compose up -d --remove-orphans
+      docker image prune -f</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="guide-section-title">🔄 Quy trình deploy khi sửa code</div>
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(168,101,0,0.2);color:#ffb74d">B1</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#ffb74d;border-color:rgba(255,183,77,0.3)">LOCAL</span>
+          <p>Sửa code trên máy local.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(168,101,0,0.2);color:#ffb74d">B2</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#ffb74d;border-color:rgba(255,183,77,0.3)">LOCAL → GITHUB</span>
+          <p>Commit & Push lên GitHub:</p>
+          <div class="cmd-block">git add .
+git commit -m "update feature"
+git push origin main</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(168,101,0,0.2);color:#ffb74d">B3</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#ffb74d;border-color:rgba(255,183,77,0.3)">TỰ ĐỘNG</span>
+          <p>GitHub Actions tự động: Build Docker image → Push lên Docker Hub → SSH vào VPS → docker compose pull & up.</p>
+        </div>
+      </div>
+    </div>
+    <div class="warning-block" style="margin-top:1.5rem"><strong>🚫 Nguyên tắc bất di bất dịch:</strong> KHÔNG sửa code trực tiếp trên server. KHÔNG chỉnh thư tay trên server.</div>
+  `,
+
+  'deploy-manual': `
+    <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
+    <div class="guide-card-tag" style="color:#69f0ae;border-color:rgba(105,240,174,0.3);margin-bottom:0.8rem">Manual Deploy</div>
+    <h2>Deploy khi VPS chưa nhận image Docker mới nhất</h2>
+    <p class="guide-subtitle">Quy trình thủ công 10 bước — Dùng khi cần cập nhật code mà không qua CI/CD tự động.</p>
+
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B1</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">LOCAL</span>
+          <p>Pull code mới nhất từ GitHub về máy local.</p>
+          <div class="cmd-block">git pull origin main</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B2</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">LOCAL</span>
+          <p>Vào thư mục backend (hoặc frontend tương tự):</p>
+          <div class="cmd-block">cd backend</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B3</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">LOCAL</span>
+          <p>Bật Docker Desktop, chờ đến khi thấy "Docker Desktop is running". Kiểm tra:</p>
+          <div class="cmd-block">docker version</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B4</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">LOCAL</span>
+          <p>Build Docker image mới:</p>
+          <div class="cmd-block">docker build -t daihoangnguyen17101994/homenest-lovers-lawn-service-backend:latest .</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B5</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">LOCAL</span>
+          <p>Đăng nhập Docker Hub nếu chưa login:</p>
+          <div class="cmd-block">docker login
+# Hiện thông báo kết nối browser → nhấn Enter để kết nối
+# Hoặc nếu hiện "Login Success" thì bỏ qua</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B6</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">LOCAL</span>
+          <p>Push image lên Docker Hub:</p>
+          <div class="cmd-block">docker push daihoangnguyen17101994/homenest-lovers-lawn-service-backend:latest</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B7</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">VPS</span>
+          <p>SSH vào VPS, chuyển đến thư mục chứa docker-compose:</p>
+          <div class="cmd-block">cd /opt/backend</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B8</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">VPS</span>
+          <p>Dừng container cũ:</p>
+          <div class="cmd-block">docker compose -f docker-compose.prod.yml down backend-new</div>
+          <div class="note-block"><strong>Lưu ý:</strong> Nếu thấy cảnh báo "Network ... Resource is still in use" → bình thường, bỏ qua.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B9</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">VPS</span>
+          <p>Khởi động lại container với image mới nhất:</p>
+          <div class="cmd-block">docker compose -f docker-compose.prod.yml up -d backend-new
+
+# Kiểm tra container đang chạy:
+docker ps | grep backend</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B10</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">VPS — RẤT QUAN TRỌNG</span>
+          <p>Kiểm tra logs để xác nhận app chạy bình thường:</p>
+          <div class="cmd-block">docker logs -f homenest-backend-new
+# Kết quả mong đợi:
+# Swagger running in: production
+# Server running on port 5000</div>
+        </div>
+      </div>
+    </div>
+  `,
+
+  'gitlab-add-member': `
+    <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
+    <div class="guide-card-tag" style="color:#ff8a50;border-color:rgba(255,138,80,0.3);margin-bottom:0.8rem">GitLab Admin</div>
+    <h2>Thêm member vào GitLab Enterprise Self-hosted</h2>
+    <p class="guide-subtitle">4 bước đơn giản để thêm thành viên mới vào dự án trên GitLab Enterprise tự host.</p>
+
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(252,96,25,0.15);color:#ff8a50">B1</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#ff8a50;border-color:rgba(255,138,80,0.3)">GITLAB UI — BẤT KỲ TÀI KHOẢN NÀO</span>
+          <p>Không cần tài khoản root. Bất kỳ ai có quyền cũng có thể mời:</p>
+          <div class="note-block"><strong>Manage → Members → Add member</strong><br>Thêm thành viên qua email của họ.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(252,96,25,0.15);color:#ff8a50">B2</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#ff8a50;border-color:rgba(255,138,80,0.3)">GITLAB UI — TÀI KHOẢN ROOT</span>
+          <p>Chuyển sang tài khoản root để approve member:</p>
+          <div class="note-block">
+            <strong>Vào nút Admin</strong> (biểu tượng cờ lê) → <strong>Admin Area</strong> → <strong>Dashboard</strong><br>
+            → Trong bảng <strong>Total Users</strong>, nhấp vào tên member<br>
+            → Vào trang của member → Nhấp <strong>dấu ba chấm dọc</strong> → <strong>Approve</strong>
+          </div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(252,96,25,0.15);color:#ff8a50">B3</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#ff8a50;border-color:rgba(255,138,80,0.3)">EMAIL — MEMBER</span>
+          <p>Member tự vào email để nhấn <strong>Accept</strong> lời mời tham gia dự án.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(252,96,25,0.15);color:#ff8a50">B4</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#ff8a50;border-color:rgba(255,138,80,0.3)">GITLAB UI — MEMBER</span>
+          <p>Member đăng nhập GitLab → vào tab <strong>Members</strong> sẽ thấy dự án đã được thêm.</p>
+          <div class="warning-block"><strong>Kiểm tra quyền repo:</strong> Vào GitLab → Project → Members. Member phải có quyền <strong>Developer</strong> trở lên, không được là Guest / Reporter.</div>
+        </div>
+      </div>
+    </div>
+  `,
+
+  'gitlab-push': `
+    <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
+    <div class="guide-card-tag" style="color:#ff8a80;border-color:rgba(255,138,128,0.3);margin-bottom:0.8rem">GitLab Dev</div>
+    <h2>Member push code vào GitLab Enterprise Self-hosted</h2>
+    <p class="guide-subtitle">Setup SSH key ed25519 để push code không cần nhập password mỗi lần.</p>
+
+    <div class="thesis-quote">
+      Sử dụng SSH key thay vì HTTPS + password là phương pháp chuẩn bảo mật — không bao giờ hỏi password, không lưu credential plain text trên máy.
+    </div>
+
+    <div class="step-list" style="margin-top:1.5rem">
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(255,82,82,0.15);color:#ff8a80">B1</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#ff8a80;border-color:rgba(255,138,128,0.3)">LOCAL — PowerShell / Git Bash</span>
+          <p>Tạo SSH key trên máy member:</p>
+          <div class="cmd-block">ssh-keygen -t ed25519 -C "email_cua_member"
+# Nhấn Enter liên tục cho nhanh
+# Key sẽ nằm ở: C:\Users\&lt;user&gt;\.ssh\</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(255,82,82,0.15);color:#ff8a80">B2</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#ff8a80;border-color:rgba(255,138,128,0.3)">LOCAL</span>
+          <p>Copy public key:</p>
+          <div class="cmd-block">cat ~/.ssh/id_ed25519.pub
+# Copy toàn bộ dòng bắt đầu bằng: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5...</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(255,82,82,0.15);color:#ff8a80">B3</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#ff8a80;border-color:rgba(255,138,128,0.3)">GITLAB UI</span>
+          <p>Thêm SSH key lên GitLab self-host:</p>
+          <div class="note-block">
+            <strong>Avatar (góc trên phải)</strong> → <strong>Preferences</strong> → <strong>SSH Keys</strong> → <strong>Add new key</strong><br>
+            → Paste public key → <strong>Save</strong>
+          </div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(255,82,82,0.15);color:#ff8a80">B4</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#ff8a80;border-color:rgba(255,138,128,0.3)">LOCAL</span>
+          <p>Test kết nối SSH tới GitLab server (thay IP bằng địa chỉ GitLab của bạn):</p>
+          <div class="cmd-block">ssh -T git@160.191.88.50
+# Kết quả OK: Welcome to GitLab, @username!</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(255,82,82,0.15);color:#ff8a80">B5</div>
+        <div class="step-body">
+          <span class="step-context" style="color:#ff8a80;border-color:rgba(255,138,128,0.3)">LOCAL</span>
+          <p>Push code lên GitLab (không còn hỏi password nữa):</p>
+          <div class="cmd-block">git push -u origin &lt;tên-nhánh&gt;</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="warning-block" style="margin-top:1.5rem">
+      <strong>⚠️ Kiểm tra quyền repo (rất quan trọng):</strong> Vào GitLab → Project → Members. Member phải là <strong>Developer</strong>, không được là Guest / Reporter — nếu không sẽ bị từ chối push dù SSH key đúng.
+    </div>
+  `
+};
+
+function openGuide(id) {
+  const detail = document.getElementById('guideDetail');
+  const grid = document.getElementById('guidesGrid');
+  const content = document.getElementById('guideDetailContent');
+
+  document.querySelectorAll('.guide-card').forEach(c => c.classList.remove('selected'));
+  content.innerHTML = guideContent[id] || '<p>Nội dung không tìm thấy.</p>';
+  grid.style.display = 'none';
+  detail.style.display = 'block';
+  detail.scrollTop = 0;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function closeGuide() {
+  document.getElementById('guideDetail').style.display = 'none';
+  document.getElementById('guidesGrid').style.display = 'grid';
+}
