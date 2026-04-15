@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevOps & Các Chức Năng Cốt Lõi</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Hiệu ứng không gian nền -->
+  <div class="bg-orbs">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <div class="app-container">
+    <header>
+      <h1>DevOps và Các Chức Năng Cốt Lõi</h1>
+      <p>Luận Án Học Thuật | Phân Tích Logic & Động Lực Học</p>
+    </header>
+    
+    <div class="main-content">
+      <div class="diagram-section">
+         <div class="flowchart-container" id="flowchart">
+            <svg class="arrows" id="svg-layer">
+              <defs>
+                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="rgba(255,255,255,0.5)" />
+                </marker>
+              </defs>
+            </svg>
+         </div>
+         <div class="instruction">
+           <span>♦</span> Nhấn vào từng chức năng trên sơ đồ để khám phá lý thuyết
+         </div>
+      </div>
+      
+      <div class="info-panel-container">
+         <div class="info-panel glass" id="infoPanel">
+            <!-- Nội dung thay đổi qua JS -->
+         </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="script.js"></script>
+</body>
+</html>
