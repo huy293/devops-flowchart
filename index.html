@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DevOps & Các Chức Năng Cốt Lõi</title>
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <!-- Hiệu ứng không gian nền -->
   <div class="bg-orbs">
@@ -34,24 +36,24 @@
     <div class="tab-content active" id="content-flowchart">
       <div class="main-content">
         <div class="diagram-section">
-           <div class="flowchart-container" id="flowchart">
-              <svg class="arrows" id="svg-layer">
-                <defs>
-                  <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-                    <polygon points="0 0, 8 3, 0 6" fill="rgba(255,255,255,0.5)" />
-                  </marker>
-                </defs>
-              </svg>
-           </div>
-           <div class="instruction">
-             <span>♦</span> Nhấn vào từng chức năng trên sơ đồ để khám phá lý thuyết
-           </div>
+          <div class="flowchart-container" id="flowchart">
+            <svg class="arrows" id="svg-layer">
+              <defs>
+                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="rgba(255,255,255,0.5)" />
+                </marker>
+              </defs>
+            </svg>
+          </div>
+          <div class="instruction">
+            <span>♦</span> Nhấn vào từng chức năng trên sơ đồ để khám phá lý thuyết
+          </div>
         </div>
-        
+
         <div class="info-panel-container">
-           <div class="info-panel glass" id="infoPanel">
-              <!-- Nội dung thay đổi qua JS -->
-           </div>
+          <div class="info-panel glass" id="infoPanel">
+            <!-- Nội dung thay đổi qua JS -->
+          </div>
         </div>
       </div>
     </div>
@@ -64,12 +66,20 @@
         <div class="guides-grid" id="guidesGrid">
 
           <div class="guide-card glass" onclick="openGuide('cicd')">
-            <div class="guide-card-icon" style="background: linear-gradient(135deg, rgba(94,67,206,0.3), rgba(130,177,255,0.2)); border-color: rgba(94,67,206,0.5);">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(187,134,252,1)" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+            <div class="guide-card-icon"
+              style="background: linear-gradient(135deg, rgba(94,67,206,0.3), rgba(130,177,255,0.2)); border-color: rgba(94,67,206,0.5);">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(187,134,252,1)"
+                stroke-width="1.5">
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
+              </svg>
             </div>
-            <div class="guide-card-tag" style="color: #bb86fc; border-color: rgba(187,134,252,0.3);">CI/CD Pipeline</div>
+            <div class="guide-card-tag" style="color: #bb86fc; border-color: rgba(187,134,252,0.3);">CI/CD Pipeline
+            </div>
             <h3>CI/CD với GitHub Actions + Docker + VPS</h3>
-            <p>Kiến trúc chuẩn: GitHub Actions build Docker image → Push Docker Hub (Private) → VPS tự động pull & deploy. Source code không build trên VPS.</p>
+            <p>Kiến trúc chuẩn: GitHub Actions build Docker image → Push Docker Hub (Private) → VPS tự động pull &
+              deploy. Source code không build trên VPS.</p>
             <div class="guide-card-meta">
               <span>🐳 Docker</span>
               <span>⚙️ GitHub Actions</span>
@@ -79,12 +89,19 @@
           </div>
 
           <div class="guide-card glass" onclick="openGuide('deploy-manual')">
-            <div class="guide-card-icon" style="background: linear-gradient(135deg, rgba(11,107,88,0.3), rgba(105,240,174,0.2)); border-color: rgba(11,107,88,0.5);">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(105,240,174,1)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <div class="guide-card-icon"
+              style="background: linear-gradient(135deg, rgba(11,107,88,0.3), rgba(105,240,174,0.2)); border-color: rgba(11,107,88,0.5);">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(105,240,174,1)"
+                stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
             </div>
             <div class="guide-card-tag" style="color: #69f0ae; border-color: rgba(105,240,174,0.3);">Manual Deploy</div>
             <h3>Deploy khi VPS chưa nhận image Docker mới nhất</h3>
-            <p>Quy trình thủ công 10 bước: Build image trên local → Push lên Docker Hub → SSH vào VPS pull image mới → Kiểm tra logs.</p>
+            <p>Quy trình thủ công 10 bước: Build image trên local → Push lên Docker Hub → SSH vào VPS pull image mới →
+              Kiểm tra logs.</p>
             <div class="guide-card-meta">
               <span>🔧 Manual</span>
               <span>🐋 Docker Compose</span>
@@ -94,12 +111,19 @@
           </div>
 
           <div class="guide-card glass" onclick="openGuide('gitlab-add-member')">
-            <div class="guide-card-icon" style="background: linear-gradient(135deg, rgba(252,96,25,0.3), rgba(252,163,17,0.2)); border-color: rgba(252,96,25,0.5);">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,138,80,1)" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            <div class="guide-card-icon"
+              style="background: linear-gradient(135deg, rgba(252,96,25,0.3), rgba(252,163,17,0.2)); border-color: rgba(252,96,25,0.5);">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,138,80,1)"
+                stroke-width="1.5">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+              </svg>
             </div>
             <div class="guide-card-tag" style="color: #ff8a50; border-color: rgba(255,138,80,0.3);">GitLab Admin</div>
             <h3>Thêm member vào GitLab Enterprise Self-hosted</h3>
-            <p>4 bước đơn giản: Mời qua mail → Root approve → Member accept → Kiểm tra quyền truy cập dự án trên GitLab.</p>
+            <p>4 bước đơn giản: Mời qua mail → Root approve → Member accept → Kiểm tra quyền truy cập dự án trên GitLab.
+            </p>
             <div class="guide-card-meta">
               <span>🦊 GitLab</span>
               <span>👤 User Mgmt</span>
@@ -109,12 +133,18 @@
           </div>
 
           <div class="guide-card glass" onclick="openGuide('gitlab-push')">
-            <div class="guide-card-icon" style="background: linear-gradient(135deg, rgba(140,41,50,0.3), rgba(255,82,82,0.2)); border-color: rgba(140,41,50,0.5);">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,138,128,1)" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            <div class="guide-card-icon"
+              style="background: linear-gradient(135deg, rgba(140,41,50,0.3), rgba(255,82,82,0.2)); border-color: rgba(140,41,50,0.5);">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,138,128,1)"
+                stroke-width="1.5">
+                <polyline points="16 18 22 12 16 6" />
+                <polyline points="8 6 2 12 8 18" />
+              </svg>
             </div>
             <div class="guide-card-tag" style="color: #ff8a80; border-color: rgba(255,138,128,0.3);">GitLab Dev</div>
             <h3>Member push code vào GitLab Enterprise Self-hosted</h3>
-            <p>Setup SSH key ed25519 → Add public key lên GitLab → Test SSH connection → Push code. Không dùng HTTPS, không hỏi password.</p>
+            <p>Setup SSH key ed25519 → Add public key lên GitLab → Test SSH connection → Push code. Không dùng HTTPS,
+              không hỏi password.</p>
             <div class="guide-card-meta">
               <span>🔑 SSH Key</span>
               <span>📤 Git Push</span>
@@ -134,7 +164,8 @@
     </div>
 
   </div>
-  
+
   <script src="script.js"></script>
 </body>
+
 </html>

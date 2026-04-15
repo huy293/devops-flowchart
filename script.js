@@ -431,6 +431,7 @@ function showDetail(id) {
 
 // Init
 showOverview();
+<<<<<<< HEAD
 
 /* ══════════════════════════════════════
    TAB SWITCHING
@@ -807,3 +808,5 @@ function closeGuide() {
   document.getElementById('guideDetail').style.display = 'none';
   document.getElementById('guidesGrid').style.display = 'grid';
 }
+=======
+>>>>>>> 004f38f8c76f8a977c9fb6d59dff105c8c34aeca
