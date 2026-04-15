@@ -1,0 +1,29 @@
+---
+- hosts: servers
+  become: yes
+  tasks:
+    - name: Update apt packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Start Nginx service
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Create a new directory for the website
+      file:
+        path: /var/www/html/mywebsite
+        state: directory
+
+    - name: Copy custom index.html
+      copy:
+        src: index.html
+        dest: /var/www/html/mywebsite/index.html

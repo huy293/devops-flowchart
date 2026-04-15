@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.25.0
+    restart: unless-stopped
+    volumes:
+      - prometheus_data:/prometheus
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:7.5.0
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    depends_on:
+      - prometheus
+
+  alertmanager:
+    image: prom/alertmanager:v0.24.0
+    restart: unless-stopped
+    volumes:
+      - alertmanager_data:/alertmanager
+    configs:
+      - source: alertmanager_config
+        target: /etc/alertmanager/config.yml
+
+volumes:
+  prometheus_data:
+  alertmanager_data:
+
+configs:
+  prometheus_config:
+    file: ./prometheus.yml
+  alertmanager_config:
+    file: ./alertmanager.yml
