@@ -137,63 +137,159 @@ const guidesList = [
 
 const guideContent = {
   'docker-concepts': `
-    <div class="guide-card-tag" style="color:#69f0ae;border-color:rgba(105,240,174,0.3);margin-bottom:0.8rem">DOCKER</div>
-    <h2>Docker Căn Bản: Phân biệt Image & Container & Network</h2>
-    <p class="guide-subtitle">Nền tảng của công nghệ ảo hóa container — Phân tích chi tiết UnionFS và Network Drivers.</p>
+    <div class="guide-card-tag" style="color:#69f0ae;border-color:rgba(105,240,174,0.3);margin-bottom:0.8rem">DOCKER HANDBOOK</div>
+    <h2>Cẩm Nang Master Docker: Từ Cơ Bản Đến Nâng Cao</h2>
+    <p class="guide-subtitle">Hướng dẫn toàn diện về kiến trúc Docker, Dockerfile tối ưu, Docker Compose, Storage và Network Drivers.</p>
     
     <div class="thesis-quote">
-      <strong>Kiến trúc UnionFS (Union File System):</strong><br>
-      Docker Image được xây dựng từ các lớp (layers) xếp chồng lên nhau. Mỗi layer đại diện cho một lệnh trong Dockerfile. Điểm mấu chốt là tất cả các layer của Image đều ở chế độ <strong>Read-Only</strong>.<br>
-      Khi khởi chạy một Container, Docker sẽ phủ lên trên cùng một lớp ghi được gọi là <strong>Writable Layer (hay Container Layer)</strong>. Mọi thao tác ghi/xóa dữ liệu trong container đều thực hiện trên layer này thông qua cơ chế <strong>Copy-on-Write (CoW)</strong>, đảm bảo Image gốc hoàn toàn không bị sửa đổi.
+      <strong>Vấn đề kinh điển:</strong> "Code chạy ngon ở máy tôi nhưng sập trên server!"<br>
+      Docker giải quyết vấn đề này bằng cách đóng gói ứng dụng cùng toàn bộ môi trường chạy (runtime, thư viện, cấu hình) thành một block duy nhất gọi là Container. Giờ đây, ứng dụng của bạn sẽ chạy nhất quán ở bất kỳ máy chủ nào.
     </div>
 
-    <div class="guide-section-title">📊 So sánh Trực quan: Image vs Container</div>
+    <div class="guide-section-title">1. Phân biệt Máy Ảo (VMs) và Docker Containers</div>
+    <p>Để hiểu tại sao Docker lại trở thành tiêu chuẩn công nghiệp, hãy nhìn vào sự so sánh kiến trúc dưới đây:</p>
+    <ul>
+      <li><strong>Virtual Machines (Ảo hóa phần cứng):</strong> Mỗi VM cần chạy một Hệ điều hành khách (Guest OS) đầy đủ ở trên phần mềm ảo hóa Hypervisor (VMware, VirtualBox). Điều này ngốn hàng Gigabyte RAM/Disk và mất vài phút để boot.</li>
+      <li><strong>Docker Containers (Ảo hóa hệ điều hành):</strong> Các container dùng chung nhân hệ điều hành máy host (Shared Host OS Kernel). Chúng được cách ly hoàn toàn qua cơ chế <strong>Namespaces</strong> và được giới hạn tài nguyên bởi <strong>Control Groups (cgroups)</strong> của Linux. Khởi động chỉ mất vài phần trăm giây và siêu nhẹ.</li>
+    </ul>
+
+    <div class="guide-section-title">2. Bản Chất Lớp File System: UnionFS & Copy-on-Write (CoW)</div>
+    <p>Docker Image không phải là một file nén zip đơn thuần, nó hoạt động dựa trên <strong>UnionFS (Union File System)</strong>:</p>
+    <ul>
+      <li><strong>Docker Image (Read-Only layers):</strong> Khi viết Dockerfile, mỗi câu lệnh tạo file (như \`COPY\` hoặc \`RUN\`) tạo ra một Layer chỉ đọc xếp chồng lên nhau. Các layer này được chia sẻ và tái sử dụng giữa các Image khác nhau để tiết kiệm đĩa cứng.</li>
+      <li><strong>Docker Container (Writable layer):</strong> Khi khởi động Container từ Image, Docker phủ thêm một lớp ghi được gọi là <strong>Writable Layer (Container Layer)</strong> ở trên cùng.</li>
+      <li><strong>Cơ chế Copy-on-Write (CoW):</strong> Khi một tiến trình trong container muốn sửa đổi file \`app.config\` ở lớp Read-Only bên dưới, Docker sẽ sao chép file đó lên lớp Writable layer trên cùng và thực hiện chỉnh sửa tại đây. Lớp Image gốc bên dưới hoàn toàn không bị ảnh hưởng, đảm bảo tính bất biến (Immutability).</li>
+    </ul>
+
+    <div class="guide-section-title">3. Hướng Dẫn Chi Tiết Các Chỉ Thị Trong Dockerfile</div>
+    <p>Dockerfile là kịch bản tự động hóa để build Docker Image. Dưới đây là giải nghĩa chi tiết các chỉ thị cốt lõi:</p>
+    <ul>
+      <li><strong>FROM:</strong> Định nghĩa Image gốc làm nền móng (Ví dụ: \`FROM node:22-alpine\`). Nên chọn các tag phiên bản cụ thể và hậu tố \`alpine\` để tối ưu dung lượng và bảo mật.</li>
+      <li><strong>WORKDIR:</strong> Tạo và di chuyển vào thư mục làm việc bên trong container. Tránh dùng thư mục gốc \`/\` làm việc.</li>
+      <li><strong>COPY vs ADD:</strong> Cả hai đều copy file từ máy host vào container. Tuy nhiên, \`COPY\` an toàn và rõ ràng hơn. Chỉ dùng \`ADD\` khi bạn muốn tải file từ URL hoặc tự động giải nén file nén dạng \`.tar.gz\`.</li>
+      <li><strong>RUN:</strong> Chạy các lệnh shell trong quá trình **build** image để cài đặt thư viện (Ví dụ: \`RUN npm ci\` hoặc \`RUN apt-get update && apt-get install -y git\`).</li>
+      <li><strong>CMD vs ENTRYPOINT:</strong>
+        <br>• \`CMD\`: Định nghĩa lệnh chạy mặc định khi container khởi chạy. Lệnh này có thể bị ghi đè hoàn toàn khi dùng \`docker run my-app <lệnh_mới>\`.
+        <br>• \`ENTRYPOINT\`: Định nghĩa executable chính của container. Các tham số truyền vào qua \`docker run\` sẽ được nối tiếp vào sau \`ENTRYPOINT\`.
+      </li>
+      <li><strong>ENV:</strong> Thiết lập các biến môi trường tĩnh (Ví dụ: \`ENV NODE_ENV=production\`).</li>
+      <li><strong>EXPOSE:</strong> Khai báo cổng mạng container sẽ lắng nghe (Ví dụ: \`EXPOSE 3000\`). Đây chỉ là mô tả tài liệu, không tự động map port ra ngoài VPS.</li>
+      <li><strong>USER:</strong> Định danh user thực thi tiến trình. Nên tránh chạy bằng root bằng cách đổi sang user thường (Ví dụ: \`USER node\` hoặc \`USER 1000:1000\`).</li>
+    </ul>
+
+    <div class="guide-section-title">📂 Ví dụ Dockerfile Node.js/Vite Production Tối Ưu Hóa</div>
+    <div class="cmd-block"># Stage 1: Build môi trường nặng
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Stage 2: Runtime siêu nhẹ chỉ chứa sản phẩm build
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY package*.json ./
+RUN npm ci --only=production
+COPY --from=builder /app/dist ./dist
+# Chạy với user node hạn chế quyền để bảo mật
+USER node
+EXPOSE 3000
+CMD ["node", "dist/server.js"]</div>
+
+    <div class="guide-section-title">4. Docker Compose: Quản Lý Đa Container Trực Quan</div>
+    <p>Khi ứng dụng cần cơ sở dữ liệu và cache kết nối cùng nhau, sử dụng \`docker run\` thủ công rất phức tạp. <strong>Docker Compose</strong> giúp bạn gom tất cả vào một file định nghĩa \`docker-compose.yml\`:</p>
+    
+    <div class="cmd-block">version: '3.8'
+
+services:
+  web-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=database
+      - DB_PASSWORD_FILE=/run/secrets/db_password
+    depends_on:
+      - database
+      - redis-cache
+    networks:
+      - backend-net
+    restart: always
+
+  database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: app_db
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: secure_password_here
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - backend-net
+    restart: always
+
+  redis-cache:
+    image: redis:7-alpine
+    networks:
+      - backend-net
+    restart: always
+
+networks:
+  backend-net:
+    driver: bridge
+
+volumes:
+  db-data:</div>
+
+    <div class="guide-section-title">5. Các Chế Độ Mạng (Network Drivers) & Lưu Trữ (Volumes)</div>
+    <ul>
+      <li><strong>Mạng Bridge:</strong> Các container kết nối vào chung một dải mạng ảo (VD: 172.18.0.0/16). Các container có thể liên lạc với nhau thông qua tên dịch vụ (DNS nội bộ của Docker). Đây là chế độ mạng mặc định và khuyên dùng.</li>
+      <li><strong>Mạng Host:</strong> Container dùng chung card mạng của VPS host, mang lại tốc độ mạng cực nhanh nhưng mất đi tính cô lập port.</li>
+      <li><strong>Named Volumes:</strong> Thư mục lưu dữ liệu do Docker tự động quản lý trên đĩa vật lý của host. Đảm bảo dữ liệu Database vẫn an toàn khi container bị stop hoặc xóa bỏ.</li>
+      <li><strong>Bind Mounts:</strong> Ánh xạ trực tiếp thư mục code local vào trong container. Rất hữu ích cho môi trường lập trình để hot-reload code ngay lập tức mà không cần rebuild image.</li>
+    </ul>
+
+    <div class="guide-section-title">🛠️ Bảng Cheatsheet Lệnh Docker CLI Cần Nhớ</div>
     <table style="width:100%; border-collapse:collapse; margin-bottom:1.5rem; text-align:left; color:#cbd5e1;">
       <thead>
         <tr style="border-bottom:2px solid rgba(255,255,255,0.1); padding-bottom:10px;">
-          <th style="padding:10px 0;">Đặc tính</th>
-          <th style="padding:10px 0; color:#69f0ae;">Docker Image</th>
-          <th style="padding:10px 0; color:#52cbff;">Docker Container</th>
+          <th style="padding:10px 0; color:#69f0ae;">Nhóm Lệnh</th>
+          <th style="padding:10px 0; color:#52cbff;">Lệnh Thực Thi CLI</th>
+          <th style="padding:10px 0;">Mục Đích Sử Dụng</th>
         </tr>
       </thead>
       <tbody>
         <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-          <td style="padding:10px 0; font-weight:600;">Trạng thái</td>
-          <td style="padding:10px 0;">Tĩnh (Static files trên đĩa cứng)</td>
-          <td style="padding:10px 0;">Động (Tiến trình bị cô lập trong RAM)</td>
+          <td style="padding:10px 0; font-weight:600;">Images</td>
+          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">docker build -t app:v1 .</td>
+          <td style="padding:10px 0;">Build image từ Dockerfile trong thư mục hiện tại</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-          <td style="padding:10px 0; font-weight:600;">Khả năng ghi</td>
-          <td style="padding:10px 0;">Chỉ đọc (Read-Only)</td>
-          <td style="padding:10px 0;">Đọc & Ghi (Writable Container Layer)</td>
+          <td style="padding:10px 0; font-weight:600;">Containers</td>
+          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">docker run -d -p 80:80 app:v1</td>
+          <td style="padding:10px 0;">Khởi chạy container chạy ngầm và map port 80</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-          <td style="padding:10px 0; font-weight:600;">Vòng đời</td>
-          <td style="padding:10px 0;">Vĩnh viễn (Cho đến khi bị xóa)</td>
-          <td style="padding:10px 0;">Tạm thời (Dễ dàng tạo, hủy, start/stop)</td>
+          <td style="padding:10px 0; font-weight:600;">Debugging</td>
+          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">docker logs -f --tail 100 app</td>
+          <td style="padding:10px 0;">Xem 100 dòng logs cuối và theo dõi real-time</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-weight:600;">Interactions</td>
+          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">docker exec -it app sh</td>
+          <td style="padding:10px 0;">Mở terminal shell tương tác trực tiếp vào container</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-weight:600;">Cleanup</td>
+          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">docker system prune -a --volumes</td>
+          <td style="padding:10px 0;">Dọn dẹp Disk: xóa container dừng, image rác và volumes thừa</td>
         </tr>
       </tbody>
     </table>
-
-    <div class="guide-section-title">🌐 Tìm hiểu các Docker Network Drivers</div>
-    <ul>
-      <li><strong>Bridge (Mặc định):</strong> Tạo ra một mạng nội bộ ảo trên host (thường dải 172.17.0.0/16). Các container kết nối vào bridge có thể liên lạc với nhau qua địa chỉ IP nội bộ. Muốn mở ra ngoài phải dùng port mapping (\`-p\`).</li>
-      <li><strong>Host:</strong> Loại bỏ sự cách ly mạng giữa container và máy host. Container trực tiếp sử dụng interface mạng của host. Ví dụ: Container chạy port 80 thì host sẽ bị chiếm dụng port 80 luôn, không cần map port. Ưu điểm: Hiệu năng mạng cực cao (Zero-overhead).</li>
-      <li><strong>None:</strong> Container hoàn toàn bị ngắt kết nối mạng. Không có card mạng nào được cấu hình ngoài loopback (\`lo\`). Dùng cho các tiến trình tính toán offline cực kỳ bảo mật.</li>
-      <li><strong>Overlay:</strong> Cho phép kết nối nhiều Docker daemon trên các máy chủ vật lý khác nhau lại với nhau thành một mạng overlay chung. Đây là xương sống cho Docker Swarm.</li>
-    </ul>
-
-    <div class="guide-section-title">🛠️ Các câu lệnh quản trị Mạng & Tài nguyên</div>
-    <div class="cmd-block"># Quản lý Mạng Docker
-docker network ls                         # Liệt kê các network hiện có
-docker network create --driver bridge app-net  # Tạo mạng bridge tên 'app-net'
-docker network inspect app-net            # Xem chi tiết cấu hình và container trong mạng
-docker run -d --network app-net --name web nginx  # Chạy container kết nối trực tiếp vào app-net
-
-# Quản lý Volume (Lưu trữ bền vững)
-docker volume create pg-data              # Tạo một volume lưu database
-docker volume ls                          # Xem danh sách volume
-docker run -d -v pg-data:/var/lib/postgresql/data postgres:16 # Gắn volume vào container</div>
   `,
 
   'docker-watchtower': `
