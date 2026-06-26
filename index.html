@@ -27,7 +27,13 @@
           <span class="tab-icon">⬡</span> Sơ Đồ DevOps
         </button>
         <button class="tab-btn" id="tab-guides" onclick="switchTab('guides')">
-          <span class="tab-icon">📋</span> Hướng Dẫn Thực Hành
+          <span class="tab-icon">📋</span> Cẩm Nang Thực Hành
+        </button>
+        <button class="tab-btn" id="tab-generators" onclick="switchTab('generators')">
+          <span class="tab-icon">⚙️</span> Trình Tạo Config
+        </button>
+        <button class="tab-btn" id="tab-quiz" onclick="switchTab('quiz')">
+          <span class="tab-icon">🧠</span> Thử Thách Senior
         </button>
       </div>
     </header>
@@ -58,108 +64,192 @@
       </div>
     </div>
 
-    <!-- TAB 2: Hướng Dẫn Thực Hành -->
+    <!-- TAB 2: Cẩm Nang Thực Hành (Playbook) -->
     <div class="tab-content" id="content-guides">
       <div class="guides-container">
-
-        <!-- Guide Cards Grid -->
-        <div class="guides-grid" id="guidesGrid">
-
-          <div class="guide-card glass" onclick="openGuide('cicd')">
-            <div class="guide-card-icon"
-              style="background: linear-gradient(135deg, rgba(94,67,206,0.3), rgba(130,177,255,0.2)); border-color: rgba(94,67,206,0.5);">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(187,134,252,1)"
-                stroke-width="1.5">
-                <circle cx="12" cy="12" r="3" />
-                <path
-                  d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
-              </svg>
+        <div class="playbook-layout">
+          <!-- Sidebar Filter & Search -->
+          <div class="playbook-sidebar glass">
+            <div class="search-box">
+              <input type="text" id="guideSearchInput" placeholder="Tìm kiếm tài liệu..." oninput="filterGuides()">
+              <span class="search-icon">🔍</span>
             </div>
-            <div class="guide-card-tag" style="color: #bb86fc; border-color: rgba(187,134,252,0.3);">CI/CD Pipeline
+            <div class="filter-categories">
+              <h3>Danh Mục</h3>
+              <button class="filter-btn active" id="btn-cat-all" onclick="setCategory('all')">📚 Tất Cả</button>
+              <button class="filter-btn" id="btn-cat-cicd" onclick="setCategory('cicd')">⚙️ CI/CD Pipelines</button>
+              <button class="filter-btn" id="btn-cat-git" onclick="setCategory('git')">🦊 GitHub & GitLab</button>
+              <button class="filter-btn" id="btn-cat-docker" onclick="setCategory('docker')">🐳 Docker & Registry</button>
+              <button class="filter-btn" id="btn-cat-k8s" onclick="setCategory('k8s')">☸️ Kubernetes (K8s)</button>
+              <button class="filter-btn" id="btn-cat-vps" onclick="setCategory('vps')">🖥️ aaPanel & VPS</button>
+              <button class="filter-btn" id="btn-cat-aws" onclick="setCategory('aws')">☁️ Cloud & AWS</button>
             </div>
-            <h3>CI/CD với GitHub Actions + Docker + VPS</h3>
-            <p>Kiến trúc chuẩn: GitHub Actions build Docker image → Push Docker Hub (Private) → VPS tự động pull &
-              deploy. Source code không build trên VPS.</p>
-            <div class="guide-card-meta">
-              <span>🐳 Docker</span>
-              <span>⚙️ GitHub Actions</span>
-              <span>🖥️ VPS</span>
-            </div>
-            <div class="guide-card-arrow">Xem chi tiết →</div>
           </div>
 
-          <div class="guide-card glass" onclick="openGuide('deploy-manual')">
-            <div class="guide-card-icon"
-              style="background: linear-gradient(135deg, rgba(11,107,88,0.3), rgba(105,240,174,0.2)); border-color: rgba(11,107,88,0.5);">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(105,240,174,1)"
-                stroke-width="1.5">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
+          <div class="playbook-main">
+            <!-- Guide Cards Grid -->
+            <div class="guides-grid" id="guidesGrid">
+              <!-- Sẽ render tự động qua JS -->
             </div>
-            <div class="guide-card-tag" style="color: #69f0ae; border-color: rgba(105,240,174,0.3);">Manual Deploy</div>
-            <h3>Deploy khi VPS chưa nhận image Docker mới nhất</h3>
-            <p>Quy trình thủ công 10 bước: Build image trên local → Push lên Docker Hub → SSH vào VPS pull image mới →
-              Kiểm tra logs.</p>
-            <div class="guide-card-meta">
-              <span>🔧 Manual</span>
-              <span>🐋 Docker Compose</span>
-              <span>📋 Step-by-step</span>
+
+            <!-- Guide Detail Panel (initially hidden) -->
+            <div class="guide-detail glass" id="guideDetail" style="display:none;">
+              <div id="guideDetailContent"></div>
             </div>
-            <div class="guide-card-arrow">Xem chi tiết →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Trình Tạo Config (Generators) -->
+    <div class="tab-content" id="content-generators">
+      <div class="generators-container">
+        <div class="playbook-sidebar glass">
+          <h3>Chọn Công Cụ</h3>
+          <button class="filter-btn active" id="btn-gen-docker" onclick="switchGenTab('docker')">🐳 Docker & Compose</button>
+          <button class="filter-btn" id="btn-gen-github" onclick="switchGenTab('github')">⚙️ GitHub Actions CI/CD</button>
+          <button class="filter-btn" id="btn-gen-aapanel" onclick="switchGenTab('aapanel')">🖥️ aaPanel Nginx Proxy</button>
+          <button class="filter-btn" id="btn-gen-k8s" onclick="switchGenTab('k8s')">☸️ Kubernetes Manifest</button>
+        </div>
+        <div class="generators-main glass">
+          <!-- DOCKER GENERATOR FORM -->
+          <div class="gen-form-panel" id="gen-form-docker">
+            <h2>Tạo Dockerfile & docker-compose.yml</h2>
+            <div class="form-group">
+              <label for="docker-lang">Ngôn ngữ / Framework:</label>
+              <select id="docker-lang" onchange="generateConfigs()">
+                <option value="node">Node.js (Express/NestJS)</option>
+                <option value="python">Python (FastAPI/Flask)</option>
+                <option value="go">Go (Golang)</option>
+                <option value="php">PHP (Laravel)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="docker-port">Cổng chạy ứng dụng (Port):</label>
+              <input type="number" id="docker-port" value="3000" oninput="generateConfigs()">
+            </div>
+            <div class="form-group check-group">
+              <input type="checkbox" id="docker-multistage" checked onchange="generateConfigs()">
+              <label for="docker-multistage">Sử dụng Multi-stage build (Tối ưu kích thước)</label>
+            </div>
+            <div class="form-group check-group">
+              <input type="checkbox" id="docker-db" onchange="generateConfigs()">
+              <label for="docker-db">Kèm PostgreSQL Database & Redis in Compose</label>
+            </div>
           </div>
 
-          <div class="guide-card glass" onclick="openGuide('gitlab-add-member')">
-            <div class="guide-card-icon"
-              style="background: linear-gradient(135deg, rgba(252,96,25,0.3), rgba(252,163,17,0.2)); border-color: rgba(252,96,25,0.5);">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,138,80,1)"
-                stroke-width="1.5">
-                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-              </svg>
+          <!-- GITHUB ACTIONS GENERATOR FORM -->
+          <div class="gen-form-panel" id="gen-form-github" style="display:none;">
+            <h2>Tạo GitHub Actions Workflow</h2>
+            <div class="form-group">
+              <label for="gh-branch">Nhánh kích hoạt (Branch):</label>
+              <input type="text" id="gh-branch" value="main" oninput="generateConfigs()">
             </div>
-            <div class="guide-card-tag" style="color: #ff8a50; border-color: rgba(255,138,80,0.3);">GitLab Admin</div>
-            <h3>Thêm member vào GitLab Enterprise Self-hosted</h3>
-            <p>4 bước đơn giản: Mời qua mail → Root approve → Member accept → Kiểm tra quyền truy cập dự án trên GitLab.
-            </p>
-            <div class="guide-card-meta">
-              <span>🦊 GitLab</span>
-              <span>👤 User Mgmt</span>
-              <span>🔐 Permissions</span>
+            <div class="form-group">
+              <label for="gh-image">Tên Docker Image (Docker Hub):</label>
+              <input type="text" id="gh-image" value="username/my-app" oninput="generateConfigs()">
             </div>
-            <div class="guide-card-arrow">Xem chi tiết →</div>
+            <div class="form-group">
+              <label for="gh-deploy-path">Thư mục deploy trên VPS:</label>
+              <input type="text" id="gh-deploy-path" value="/home/ubuntu/my-app" oninput="generateConfigs()">
+            </div>
           </div>
 
-          <div class="guide-card glass" onclick="openGuide('gitlab-push')">
-            <div class="guide-card-icon"
-              style="background: linear-gradient(135deg, rgba(140,41,50,0.3), rgba(255,82,82,0.2)); border-color: rgba(140,41,50,0.5);">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,138,128,1)"
-                stroke-width="1.5">
-                <polyline points="16 18 22 12 16 6" />
-                <polyline points="8 6 2 12 8 18" />
-              </svg>
+          <!-- AAPANEL GENERATOR FORM -->
+          <div class="gen-form-panel" id="gen-form-aapanel" style="display:none;">
+            <h2>Tạo Nginx Reverse Proxy Config cho aaPanel</h2>
+            <div class="form-group">
+              <label for="aa-domain">Domain / Subdomain:</label>
+              <input type="text" id="aa-domain" value="app.domain.com" oninput="generateConfigs()">
             </div>
-            <div class="guide-card-tag" style="color: #ff8a80; border-color: rgba(255,138,128,0.3);">GitLab Dev</div>
-            <h3>Member push code vào GitLab Enterprise Self-hosted</h3>
-            <p>Setup SSH key ed25519 → Add public key lên GitLab → Test SSH connection → Push code. Không dùng HTTPS,
-              không hỏi password.</p>
-            <div class="guide-card-meta">
-              <span>🔑 SSH Key</span>
-              <span>📤 Git Push</span>
-              <span>🛡️ Security</span>
+            <div class="form-group">
+              <label for="aa-port">Cổng Docker Container nội bộ:</label>
+              <input type="number" id="aa-port" value="3000" oninput="generateConfigs()">
             </div>
-            <div class="guide-card-arrow">Xem chi tiết →</div>
           </div>
 
+          <!-- KUBERNETES GENERATOR FORM -->
+          <div class="gen-form-panel" id="gen-form-k8s" style="display:none;">
+            <h2>Tạo Kubernetes Manifest (YAML)</h2>
+            <div class="form-group">
+              <label for="k8s-name">Tên ứng dụng (App Name):</label>
+              <input type="text" id="k8s-name" value="my-app" oninput="generateConfigs()">
+            </div>
+            <div class="k8s-image-group form-group">
+              <label for="k8s-image">Docker Image URL:</label>
+              <input type="text" id="k8s-image" value="username/my-app:latest" oninput="generateConfigs()">
+            </div>
+            <div class="form-group">
+              <label for="k8s-replicas">Số lượng Pods (Replicas):</label>
+              <input type="number" id="k8s-replicas" value="3" oninput="generateConfigs()">
+            </div>
+            <div class="form-group">
+              <label for="k8s-port">Cổng Container (Container Port):</label>
+              <input type="number" id="k8s-port" value="3000" oninput="generateConfigs()">
+            </div>
+          </div>
+
+          <!-- GENERATOR OUTPUT CODE -->
+          <div class="gen-code-output">
+            <div class="code-header">
+              <span id="output-filename">Dockerfile</span>
+              <button class="copy-code-btn" onclick="copyGenCode('output-code-block')">📋 Copy Code</button>
+            </div>
+            <pre><code id="output-code-block">Loading...</code></pre>
+            
+            <div class="code-header-2-wrapper" id="output-filename-2-wrapper" style="display:none; margin-top: 1.5rem;">
+              <div class="code-header">
+                <span id="output-filename-2">docker-compose.yml</span>
+                <button class="copy-code-btn" onclick="copyGenCode('output-code-block-2')">📋 Copy Code</button>
+              </div>
+              <pre><code id="output-code-block-2">Loading...</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: Thử Thách Senior (Quiz) -->
+    <div class="tab-content" id="content-quiz">
+      <div class="quiz-container glass">
+        <div class="quiz-start-panel" id="quizStartPanel">
+          <h2>Thử Thách Trắc Nghiệm DevOps Senior</h2>
+          <p>Bộ câu hỏi trắc nghiệm thực chiến được thiết kế bởi các DevOps Engineer lâu năm. Bạn đã sẵn sàng đo lường mức độ thấu hiểu của mình đối với CI/CD, Docker, Kubernetes, AWS và các sự cố hệ thống thực tế?</p>
+          <div class="quiz-rules">
+            <span>⏱️ Không giới hạn thời gian</span>
+            <span>🔥 8 câu hỏi hóc búa</span>
+            <span>📖 Giải thích học thuật chi tiết</span>
+          </div>
+          <button class="quiz-start-btn" onclick="startQuiz()">Bắt Đầu Thử Thách 🚀</button>
         </div>
 
-        <!-- Guide Detail Panel (initially hidden) -->
-        <div class="guide-detail glass" id="guideDetail" style="display:none;">
-          <div id="guideDetailContent"></div>
+        <div class="quiz-play-panel" id="quizPlayPanel" style="display:none;">
+          <div class="quiz-progress-wrapper">
+            <div class="quiz-progress-text">Câu hỏi <span id="currentQuestionNum">1</span> / 8</div>
+            <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="quizProgressFill"></div></div>
+          </div>
+          <div class="quiz-question-box">
+            <h3 id="quizQuestionText">Nội dung câu hỏi</h3>
+          </div>
+          <div class="quiz-options-list" id="quizOptionsList">
+            <!-- Render qua JS -->
+          </div>
+          <div class="quiz-explanation-box" id="quizExplanationBox" style="display:none;">
+            <h4>💡 Giải thích chi tiết:</h4>
+            <p id="quizExplanationText">Nội dung giải thích...</p>
+            <button class="quiz-next-btn" onclick="nextQuestion()">Câu Tiếp Theo →</button>
+          </div>
         </div>
 
+        <div class="quiz-result-panel" id="quizResultPanel" style="display:none;">
+          <h2>Kết Quả Thử Thách</h2>
+          <div class="quiz-score-badge">
+            <span id="quizScoreText">0/8</span>
+            <p id="quizGradeText">DevOps Junior</p>
+          </div>
+          <p id="quizFeedbackText">Hãy tiếp tục đọc các tài liệu cẩm nang để nâng cao trình độ!</p>
+          <button class="quiz-restart-btn" onclick="restartQuiz()">Làm Lại Trắc Nghiệm 🔄</button>
+        </div>
       </div>
     </div>
 

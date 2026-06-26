@@ -260,261 +260,754 @@ const infoPanel = document.getElementById('infoPanel');
 
 function updateFlowHighlight(activeId) {
   if (!activeId) {
-    document.querySelectorAll('.svg-line').forEach(line => {
-      line.setAttribute('stroke', 'rgba(255,255,255,0.15)');
-      line.setAttribute('stroke-width', '2');
-      line.classList.remove('flow-anim');
-    });
-    document.querySelectorAll('.node').forEach(n => {
-      n.style.opacity = '1';
-      n.style.filter = 'none';
-      if (!n.classList.contains('center-node') && !n.classList.contains('active')) n.style.transform = '';
-    });
-    return;
-  }
-  const ids = nodeData.map(n => n.id);
-  const idx = ids.indexOf(activeId);
-  const prevIdx = (idx - 1 + ids.length) % ids.length;
-  const nextIdx = (idx + 1) % ids.length;
-  const prevId = ids[prevIdx];
-  const nextId = ids[nextIdx];
-
-  document.querySelectorAll('.node').forEach(n => {
-    if (n.classList.contains('center-node')) return;
-    const nId = n.id.replace('node-', '');
-    if (nId === activeId) { n.style.opacity = '1'; n.style.filter = 'none'; }
-    else if (nId === prevId || nId === nextId) { n.style.opacity = '0.9'; n.style.filter = 'none'; n.style.transform = 'scale(0.98)'; }
-    else { n.style.opacity = '0.3'; n.style.filter = 'grayscale(100%)'; n.style.transform = 'scale(0.95)'; }
-  });
-
-  document.querySelectorAll('.svg-line').forEach(line => {
-    const sId = line.getAttribute('data-source');
-    const tId = line.getAttribute('data-target');
-    if (sId === prevId && tId === activeId) {
-      line.setAttribute('stroke', `rgba(${nodeData[idx].color}, 1)`);
-      line.setAttribute('stroke-width', '3');
-      line.classList.add('flow-anim');
-    } else if (sId === activeId && tId === nextId) {
-      line.setAttribute('stroke', `rgba(${nodeData[nextIdx].color}, 1)`);
-      line.setAttribute('stroke-width', '3');
-      line.classList.add('flow-anim');
-    } else {
-      line.setAttribute('stroke', 'rgba(255,255,255,0.04)');
-      line.setAttribute('stroke-width', '2');
-      line.classList.remove('flow-anim');
-    }
-  });
-}
-
-function showOverview() {
-  document.querySelectorAll('.node').forEach(n => {
-    if (n.classList.contains('center-node')) return;
-    n.classList.remove('active');
-    const dataNode = nodeData.find(d => d.id === n.id.split('-')[1]);
-    if (dataNode) n.style.boxShadow = `0 4px 15px rgba(${dataNode.color}, 0.1)`;
-  });
-  updateFlowHighlight(null);
-  infoPanel.style.opacity = 0;
-  setTimeout(() => {
-    infoPanel.innerHTML = textContent.overview;
-    infoPanel.style.opacity = 1;
-    infoPanel.scrollTop = 0;
-  }, 250);
-}
-
-function showDetail(id) {
-  document.querySelectorAll('.node').forEach(n => {
-    if (n.classList.contains('center-node')) return;
-    n.classList.remove('active');
-    const dataNode = nodeData.find(d => d.id === n.id.split('-')[1]);
-    if (dataNode) n.style.boxShadow = `0 4px 15px rgba(${dataNode.color}, 0.1)`;
-  });
-  const activeNode = document.getElementById(`node-${id}`);
-  activeNode.classList.add('active');
-  const dNode = nodeData.find(n => n.id === id);
-  activeNode.style.boxShadow = `0 0 35px rgba(${dNode.color}, 0.9)`;
-  updateFlowHighlight(id);
-  infoPanel.style.opacity = 0;
-  setTimeout(() => {
-    infoPanel.innerHTML = textContent[id];
-    infoPanel.style.opacity = 1;
-    infoPanel.scrollTop = 0;
-  }, 250);
-}
-
-// Init
-showOverview();
-
-/* ══════════════════════════════════════
+    document.quer/* ══════════════════════════════════════
    TAB SWITCHING
-══════════════════════════════════════ */
+   ══════════════════════════════════════ */
 function switchTab(tabId) {
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.getElementById('tab-' + tabId).classList.add('active');
-  document.getElementById('content-' + tabId).classList.add('active');
+  
+  const targetTab = document.getElementById('tab-' + tabId);
+  const targetContent = document.getElementById('content-' + tabId);
+  
+  if (targetTab) targetTab.classList.add('active');
+  if (targetContent) targetContent.classList.add('active');
+  
   if (tabId === 'guides') {
-    document.getElementById('guideDetail').style.display = 'none';
-    document.getElementById('guidesGrid').style.display = 'grid';
+    closeGuide();
+    filterGuides();
+  } else if (tabId === 'generators') {
+    generateConfigs();
+  } else if (tabId === 'quiz') {
+    restartQuiz();
   }
 }
 
 /* ══════════════════════════════════════
+   PLAYBOOK DATA & SEARCH
+   ══════════════════════════════════════ */
+const guidesList = [
+  {
+    id: 'docker-concepts',
+    category: 'docker',
+    tags: ['🐳 Docker', '📦 Image', '🚀 Container'],
+    title: 'Docker Căn Bản: Phân biệt Image & Container',
+    desc: 'Tìm hiểu khái niệm nền tảng của Docker. So sánh trực quan Image và Container, cơ chế Layered File System và các câu lệnh quản trị cơ bản.',
+    icon: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(105,240,174,1)" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="4" /><path d="M9 2v20M15 2v20M2 9h20M2 15h20" /></svg>`,
+    iconColor: '#69f0ae',
+    iconBg: 'linear-gradient(135deg, rgba(11,107,88,0.3), rgba(105,240,174,0.2))',
+    iconBorder: 'rgba(11,107,88,0.5)'
+  },
+  {
+    id: 'docker-watchtower',
+    category: 'docker',
+    tags: ['🐳 Watchtower', '🔄 Auto Update', '🐋 Compose'],
+    title: 'Tự động cập nhật Container với Watchtower',
+    desc: 'Hướng dẫn cụ thể cách setup Watchtower để tự động quét registry, tải image mới và restart container. Giải phóng 90% công sức deploy thủ công.',
+    icon: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(82,203,255,1)" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>`,
+    iconColor: '#52cbff',
+    iconBg: 'linear-gradient(135deg, rgba(2,136,209,0.3), rgba(82,203,255,0.2))',
+    iconBorder: 'rgba(2,136,209,0.5)'
+  },
+  {
+    id: 'docker-opt',
+    category: 'docker',
+    tags: ['🐳 Dockerfile', '⚡ Multi-stage', '🛡️ Security'],
+    title: 'Tối ưu hóa Dockerfile cho môi trường Production',
+    desc: 'Cách viết Dockerfile chuẩn chuyên nghiệp: Giảm kích thước image (Multi-stage build), tối ưu cache layer và loại bỏ đặc quyền root để bảo mật.',
+    icon: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(187,134,252,1)" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>`,
+    iconColor: '#bb86fc',
+    iconBg: 'linear-gradient(135deg, rgba(94,67,206,0.3), rgba(187,134,252,0.2))',
+    iconBorder: 'rgba(94,67,206,0.5)'
+  },
+  {
+    id: 'cicd-github',
+    category: 'cicd',
+    tags: ['⚙️ GitHub Actions', '🐳 Docker Hub', '🖥️ VPS'],
+    title: 'CI/CD Pipeline với GitHub Actions + Docker + VPS',
+    desc: 'Kiến trúc tự động hóa: GitHub Actions build Docker image → Push Docker Hub (Private) → Kết nối SSH VPS tự động pull & restart container.',
+    icon: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(130,177,255,1)" stroke-width="1.5"><circle cx="12" cy="12" r="3" /><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" /></svg>`,
+    iconColor: '#82b1ff',
+    iconBg: 'linear-gradient(135deg, rgba(26,91,176,0.3), rgba(130,177,255,0.2))',
+    iconBorder: 'rgba(26,91,176,0.5)'
+  },
+  {
+    id: 'cicd-gitlab',
+    category: 'cicd',
+    tags: ['🦊 GitLab CI', '⚙️ Runner', '🛡️ Docker Executor'],
+    title: 'CI/CD với GitLab CI/CD & Self-Hosted Runner',
+    desc: 'Cài đặt và cấu hình GitLab Runner trên máy chủ riêng, cấu hình Docker executor, cơ chế quản lý cache dependencies để tối ưu tốc độ build.',
+    icon: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,138,128,1)" stroke-width="1.5"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>`,
+    iconColor: '#ff8a80',
+    iconBg: 'linear-gradient(135deg, rgba(140,41,50,0.3), rgba(255,82,82,0.2))',
+    iconBorder: 'rgba(140,41,50,0.5)'
+  },
+  {
+    id: 'git-ssh',
+    category: 'git',
+    tags: ['🦊 GitLab', '🐙 GitHub', '🔑 SSH Key'],
+    title: 'Cấu hình SSH Keys cho Nhiều Tài khoản GitHub & GitLab',
+    desc: 'Làm việc chuyên nghiệp: Setup SSH config trên máy local để quản lý đồng thời nhiều tài khoản Git mà không bao giờ bị hỏi mật khẩu.',
+    icon: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,183,77,1)" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>`,
+    iconColor: '#ffb74d',
+    iconBg: 'linear-gradient(135deg, rgba(168,101,0,0.3), rgba(255,183,77,0.2))',
+    iconBorder: 'rgba(168,101,0,0.5)'
+  },
+  {
+    id: 'k8s-core',
+    category: 'k8s',
+    tags: ['☸️ K8s', '📦 Pod', '⚙️ Deployment', '🔌 Service'],
+    title: 'Kubernetes (K8s) Cơ Bản: Pods, Deployments & Services',
+    desc: 'Cẩm nang nhập môn Kubernetes chuẩn doanh nghiệp: Hiểu rõ cơ chế điều phối container, cấu trúc YAML Deployment và cách expose dịch vụ.',
+    icon: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(100,181,246,1)" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>`,
+    iconColor: '#64b5f6',
+    iconBg: 'linear-gradient(135deg, rgba(30,136,229,0.3), rgba(100,181,246,0.2))',
+    iconBorder: 'rgba(30,136,229,0.5)'
+  },
+  {
+    id: 'k8s-config',
+    category: 'k8s',
+    tags: ['☸️ Ingress', '🔑 Secret', '📝 ConfigMap'],
+    title: 'Quản lý Cấu hình K8s: ConfigMap, Secret & Ingress',
+    desc: 'Đưa ứng dụng lên K8s an toàn: Cách cấu hình biến môi trường qua ConfigMap, mã hóa Secret và định tuyến traffic bằng Nginx Ingress Controller.',
+    icon: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(77,208,225,1)" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>`,
+    iconColor: '#4dd0e1',
+    iconBg: 'linear-gradient(135deg, rgba(0,151,167,0.3), rgba(77,208,225,0.2))',
+    iconBorder: 'rgba(0,151,167,0.5)'
+  },
+  {
+    id: 'k8s-helm',
+    category: 'k8s',
+    tags: ['☸️ Helm Chart', '📦 Package Manager', '🛠️ Template'],
+    title: 'Đóng gói Ứng dụng Kubernetes với Helm Chart',
+    desc: 'Sử dụng Helm để quản lý ứng dụng K8s dưới dạng package. Tạo template cho cấu hình manifest, quản lý biến qua values.yaml và thực hiện nâng cấp/rollback.',
+    icon: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(149,117,205,1)" stroke-width="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" /></svg>`,
+    iconColor: '#9575cd',
+    iconBg: 'linear-gradient(135deg, rgba(94,53,177,0.3), rgba(149,117,205,0.2))',
+    iconBorder: 'rgba(94,53,177,0.5)'
+  },
+  {
+    id: 'aapanel-proxy',
+    category: 'vps',
+    tags: ['🖥️ aaPanel', '🌐 Reverse Proxy', '🛡️ Let\'s Encrypt'],
+    title: 'aaPanel: Nginx Reverse Proxy Docker & Let\'s Encrypt',
+    desc: 'Quy trình trỏ tên miền về container Docker chạy trên VPS. Setup Reverse Proxy bảo mật và tự động gia hạn SSL Let\'s Encrypt.',
+    icon: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(129,199,132,1)" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>`,
+    iconColor: '#81c784',
+    iconBg: 'linear-gradient(135deg, rgba(46,125,50,0.3), rgba(129,199,132,0.2))',
+    iconBorder: 'rgba(46,125,50,0.5)'
+  },
+  {
+    id: 'aws-vpc',
+    category: 'aws',
+    tags: ['☁️ AWS', '🌐 VPC', '🛡️ Production Layout'],
+    title: 'Kiến trúc mạng AWS VPC 3-Tier chuẩn Production',
+    desc: 'Thiết kế mạng AWS an toàn tuyệt đối: Chia hệ thống thành 3 tầng Public Subnet (ALB), Private Subnet (App), và Isolated Subnet (Database) qua NAT Gateway.',
+    icon: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(224,224,224,1)" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5" /></svg>`,
+    iconColor: '#e0e0e0',
+    iconBg: 'linear-gradient(135deg, rgba(66,66,66,0.3), rgba(224,224,224,0.2))',
+    iconBorder: 'rgba(66,66,66,0.5)'
+  },
+  {
+    id: 'aws-compute',
+    category: 'aws',
+    tags: ['☁️ AWS EC2', '📦 S3 Storage', '⚡ CloudFront CDN'],
+    title: 'Deploy Ứng dụng với AWS EC2, S3 & CloudFront CDN',
+    desc: 'Hướng dẫn deploy app lên EC2, lưu trữ static assets (image, video) trên S3 và phân phối băng thông rộng qua mạng lưới CloudFront CDN.',
+    icon: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(240,98,146,1)" stroke-width="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" /></svg>`,
+    iconColor: '#f06292',
+    iconBg: 'linear-gradient(135deg, rgba(173,20,87,0.3), rgba(240,98,146,0.2))',
+    iconBorder: 'rgba(173,20,87,0.5)'
+  }
+];
+
+let currentCategory = 'all';
+let searchQuery = '';
+
+function renderGuides(list) {
+  const grid = document.getElementById('guidesGrid');
+  grid.innerHTML = '';
+  
+  if (list.length === 0) {
+    grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #a0aec0; padding: 3rem;">Không tìm thấy tài liệu nào khớp với từ khóa tìm kiếm.</div>`;
+    return;
+  }
+  
+  list.forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'guide-card glass';
+    card.onclick = () => openGuide(g.id);
+    
+    let tagsHtml = '';
+    g.tags.forEach(t => { tagsHtml += `<span>${t}</span>`; });
+    
+    card.innerHTML = `
+      <div class="guide-card-icon" style="background: ${g.iconBg}; border-color: ${g.iconBorder};">
+        ${g.icon}
+      </div>
+      <div class="guide-card-tag" style="color: ${g.iconColor}; border-color: ${g.iconBorder};">${g.category.toUpperCase()}</div>
+      <h3>${g.title}</h3>
+      <p>${g.desc}</p>
+      <div class="guide-card-meta">${tagsHtml}</div>
+      <div class="guide-card-arrow">Xem chi tiết →</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function filterGuides() {
+  const filtered = guidesList.filter(g => {
+    const matchesCategory = (currentCategory === 'all' || g.category === currentCategory);
+    const matchesSearch = (
+      g.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      g.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      g.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+    return matchesCategory && matchesSearch;
+  });
+  renderGuides(filtered);
+}
+
+function setCategory(cat) {
+  currentCategory = cat;
+  document.querySelectorAll('.playbook-sidebar .filter-btn').forEach(btn => btn.classList.remove('active'));
+  const activeBtn = document.getElementById('btn-cat-' + cat);
+  if (activeBtn) activeBtn.classList.add('active');
+  
+  document.getElementById('guideDetail').style.display = 'none';
+  document.getElementById('guidesGrid').style.display = 'grid';
+  filterGuides();
+}
+
+function filterGuidesBySearch() {
+  const input = document.getElementById('guideSearchInput');
+  searchQuery = input.value;
+  document.getElementById('guideDetail').style.display = 'none';
+  document.getElementById('guidesGrid').style.display = 'grid';
+  filterGuides();
+}
+window.filterGuides = filterGuidesBySearch;
+
+/* ══════════════════════════════════════
    GUIDE DETAIL CONTENT
-══════════════════════════════════════ */
+   ══════════════════════════════════════ */
 const guideContent = {
-  cicd: `
+  'docker-concepts': `
     <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
-    <div class="guide-card-tag" style="color:#bb86fc;border-color:rgba(187,134,252,0.3);margin-bottom:0.8rem">CI/CD Pipeline</div>
-    <h2>CI/CD với GitHub Actions + Docker + Docker Hub + VPS</h2>
-    <p class="guide-subtitle">Kiến trúc chuẩn best practice CI/CD hiện đại — Source code không build trên VPS, VPS không chứa secret.</p>
-    <div class="thesis-quote" style="margin-bottom:2rem">
-      <strong>Kiến trúc tổng quan:</strong><br>
-      GitHub → GitHub Actions (CI) → Build Docker image → Push lên Docker Hub (PRIVATE) → VPS (CD) → docker-compose pull → docker-compose up -d
+    <div class="guide-card-tag" style="color:#69f0ae;border-color:rgba(105,240,174,0.3);margin-bottom:0.8rem">DOCKER</div>
+    <h2>Docker Căn Bản: Phân biệt Image & Container</h2>
+    <p class="guide-subtitle">Nền tảng của ảo hóa container — Giúp lập trình viên thấu hiểu cơ cấu của Docker.</p>
+    
+    <div class="thesis-quote">
+      <strong>Định lý Docker:</strong><br>
+      • <strong>Image (Khuôn mẫu):</strong> Là tệp tĩnh (Read-Only), chứa mã nguồn, thư viện, biến môi trường và runtime. Nó được tạo ra từ Dockerfile.<br>
+      • <strong>Container (Thực thể):</strong> Là một tiến trình (process) chạy cô lập trên máy chủ, được sinh ra từ Image. Khi chạy, container tạo thêm một lớp ghi được (Writable Layer) ở trên cùng.
     </div>
-    <div class="guide-section-title">⚙️ Ưu điểm kiến trúc</div>
-    <div class="step-list">
-      <div class="step-item">
-        <div class="step-num" style="background:rgba(187,134,252,0.15);color:#bb86fc">✓</div>
-        <div class="step-body"><p><strong style="color:#e2e8f0">CI là nơi duy nhất tạo artifact (Docker image)</strong> — không build trên VPS, tránh lệ thuộc môi trường, reproducible build, dễ scale, dễ rollback.</p></div>
-      </div>
-      <div class="step-item">
-        <div class="step-num" style="background:rgba(187,134,252,0.15);color:#bb86fc">✓</div>
-        <div class="step-body"><p><strong style="color:#e2e8f0">Image private trên Docker Hub</strong> — không lộ source code, VPS chỉ cần docker pull, dễ audit và version bằng tag (:sha, :v1.2.3, :latest).</p></div>
-      </div>
-      <div class="step-item">
-        <div class="step-num" style="background:rgba(187,134,252,0.15);color:#bb86fc">✓</div>
-        <div class="step-body"><p><strong style="color:#e2e8f0">VPS chỉ là runtime</strong> — không chứa source code, không chứa secret trong git. Khuyến nghị tag image = commit SHA.</p></div>
-      </div>
-    </div>
-    <div class="guide-section-title">🔑 Cấu hình SSH Key cho GitHub Actions</div>
-    <div class="warning-block"><strong>⚠️ Lưu ý quan trọng:</strong> File ~/.ssh/authorized_keys chỉ chứa <strong>public key</strong> (bắt đầu bằng ssh-ed25519 AAAA...). Tuyệt đối KHÔNG paste private key lên VPS.</div>
-    <div class="step-list" style="margin-top:1.2rem">
-      <div class="step-item">
-        <div class="step-num" style="background:rgba(130,177,255,0.15);color:#82b1ff">B1</div>
-        <div class="step-body">
-          <span class="step-context" style="color:#82b1ff;border-color:rgba(130,177,255,0.3)">LOCAL</span>
-          <p>Tạo SSH key pair trên máy local (Windows PowerShell / Git Bash):</p>
-          <div class="cmd-block">ssh-keygen -t ed25519 -C "github-actions-deploy"
-# Private key: github-actions-homenest  → GIỮ BÍ MẬT
-# Public key:  github-actions-homenest.pub → copy lên VPS</div>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-num" style="background:rgba(130,177,255,0.15);color:#82b1ff">B2</div>
-        <div class="step-body">
-          <span class="step-context" style="color:#82b1ff;border-color:rgba(130,177,255,0.3)">VPS</span>
-          <p>Thêm public key vào VPS:</p>
-          <div class="cmd-block">nano ~/.ssh/authorized_keys
-# Dán PUBLIC key (.pub) vào cuối file
 
-chmod 700 ~/.ssh
-chmod 600 ~/.ssh/authorized_keys</div>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-num" style="background:rgba(130,177,255,0.15);color:#82b1ff">B3</div>
-        <div class="step-body">
-          <span class="step-context" style="color:#82b1ff;border-color:rgba(130,177,255,0.3)">GITHUB</span>
-          <p>Thêm private key vào GitHub Secrets: <strong>Repo → Settings → Secrets → Actions → New repository secret</strong></p>
-          <div class="note-block"><strong>Name:</strong> VPS_SSH_KEY<br><strong>Value:</strong> Dán toàn bộ nội dung private key</div>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-num" style="background:rgba(130,177,255,0.15);color:#82b1ff">B4</div>
-        <div class="step-body">
-          <span class="step-context" style="color:#82b1ff;border-color:rgba(130,177,255,0.3)">GITHUB ACTIONS WORKFLOW</span>
-          <div class="cmd-block">- name: Deploy to VPS
-  uses: appleboy/ssh-action@v1.0.3
-  with:
-    host: \${{ secrets.SSH_HOST }}
-    username: \${{ secrets.SSH_USER }}
-    key: \${{ secrets.VPS_SSH_KEY }}
-    script: |
-      cd /home/ubuntu/homenest
-      docker compose pull
-      docker compose up -d --remove-orphans
-      docker image prune -f</div>
-        </div>
-      </div>
-    </div>
-    <div class="guide-section-title">🔄 Quy trình deploy khi sửa code</div>
-    <div class="step-list">
-      <div class="step-item">
-        <div class="step-num" style="background:rgba(168,101,0,0.2);color:#ffb74d">B1</div>
-        <div class="step-body"><span class="step-context" style="color:#ffb74d;border-color:rgba(255,183,77,0.3)">LOCAL</span><p>Sửa code trên máy local.</p></div>
-      </div>
-      <div class="step-item">
-        <div class="step-num" style="background:rgba(168,101,0,0.2);color:#ffb74d">B2</div>
-        <div class="step-body">
-          <span class="step-context" style="color:#ffb74d;border-color:rgba(255,183,77,0.3)">LOCAL → GITHUB</span>
-          <div class="cmd-block">git add .
-git commit -m "update feature"
-git push origin main</div>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-num" style="background:rgba(168,101,0,0.2);color:#ffb74d">B3</div>
-        <div class="step-body"><span class="step-context" style="color:#ffb74d;border-color:rgba(255,183,77,0.3)">TỰ ĐỘNG</span><p>GitHub Actions tự động: Build Docker image → Push lên Docker Hub → SSH vào VPS → docker compose pull &amp; up.</p></div>
-      </div>
-    </div>
-    <div class="warning-block" style="margin-top:1.5rem"><strong>🚫 Nguyên tắc:</strong> KHÔNG sửa code trực tiếp trên server.</div>
-  `,
+    <div class="guide-section-title">📊 So sánh Trực quan</div>
+    <table style="width:100%; border-collapse:collapse; margin-bottom:1.5rem; text-align:left; color:#cbd5e1;">
+      <thead>
+        <tr style="border-bottom:2px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+          <th style="padding:10px 0;">Đặc tính</th>
+          <th style="padding:10px 0; color:#69f0ae;">Docker Image</th>
+          <th style="padding:10px 0; color:#52cbff;">Docker Container</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-weight:600;">Trạng thái</td>
+          <td style="padding:10px 0;">Tĩnh (Tệp lưu trữ trên đĩa)</td>
+          <td style="padding:10px 0;">Động (Tiến trình đang chạy trong RAM)</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-weight:600;">Ghi dữ liệu</td>
+          <td style="padding:10px 0;">Chỉ đọc (Read-only)</td>
+          <td style="padding:10px 0;">Ghi/Đọc (Writable layer trên cùng)</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-weight:600;">Ví dụ lập trình</td>
+          <td style="padding:10px 0;">Class (Lớp)</td>
+          <td style="padding:10px 0;">Object (Thực thể của lớp)</td>
+        </tr>
+      </tbody>
+    </table>
 
-  'deploy-manual': `
-    <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
-    <div class="guide-card-tag" style="color:#69f0ae;border-color:rgba(105,240,174,0.3);margin-bottom:0.8rem">Manual Deploy</div>
-    <h2>Deploy khi VPS chưa nhận image Docker mới nhất</h2>
-    <p class="guide-subtitle">Quy trình thủ công 10 bước — Dùng khi cần cập nhật code mà không qua CI/CD tự động.</p>
+    <div class="guide-section-title">🛠️ Các câu lệnh Docker cốt lõi cần nhớ</div>
     <div class="step-list">
-      <div class="step-item"><div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B1</div><div class="step-body"><span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">LOCAL</span><p>Pull code mới nhất từ GitHub về máy local.</p><div class="cmd-block">git pull origin main</div></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B2</div><div class="step-body"><span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">LOCAL</span><p>Vào thư mục backend:</p><div class="cmd-block">cd backend</div></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B3</div><div class="step-body"><span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">LOCAL</span><p>Bật Docker Desktop, kiểm tra:</p><div class="cmd-block">docker version</div></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B4</div><div class="step-body"><span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">LOCAL</span><p>Build Docker image mới:</p><div class="cmd-block">docker build -t daihoangnguyen17101994/homenest-lovers-lawn-service-backend:latest .</div></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B5</div><div class="step-body"><span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">LOCAL</span><p>Đăng nhập Docker Hub:</p><div class="cmd-block">docker login</div></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B6</div><div class="step-body"><span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">LOCAL</span><p>Push image lên Docker Hub:</p><div class="cmd-block">docker push daihoangnguyen17101994/homenest-lovers-lawn-service-backend:latest</div></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B7</div><div class="step-body"><span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">VPS</span><p>SSH vào VPS, chuyển đến thư mục chứa docker-compose:</p><div class="cmd-block">cd /opt/backend</div></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B8</div><div class="step-body"><span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">VPS</span><p>Dừng container cũ:</p><div class="cmd-block">docker compose -f docker-compose.prod.yml down backend-new</div><div class="note-block"><strong>Lưu ý:</strong> Cảnh báo "Resource is still in use" → bình thường, bỏ qua.</div></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B9</div><div class="step-body"><span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">VPS</span><p>Khởi động lại container:</p><div class="cmd-block">docker compose -f docker-compose.prod.yml up -d backend-new
-docker ps | grep backend</div></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">B10</div><div class="step-body"><span class="step-context" style="color:#69f0ae;border-color:rgba(105,240,174,0.3)">VPS — RẤT QUAN TRỌNG</span><p>Kiểm tra logs:</p><div class="cmd-block">docker logs -f homenest-backend-new
-# Kết quả mong đợi:
-# Swagger running in: production
-# Server running on port 5000</div></div></div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">1</div>
+        <div class="step-body">
+          <p><strong style="color:#e2e8f0">Build image từ Dockerfile:</strong></p>
+          <div class="cmd-block">docker build -t my-app:v1.0 .</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">2</div>
+        <div class="step-body">
+          <p><strong style="color:#e2e8f0">Chạy container từ image:</strong></p>
+          <div class="cmd-block">docker run -d -p 3000:3000 --name running-app my-app:v1.0
+# -d: Chạy ngầm (detached mode)
+# -p 3000:3000: Map cổng 3000 của host vào cổng 3000 của container</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">3</div>
+        <div class="step-body">
+          <p><strong style="color:#e2e8f0">Xem các container đang chạy và quản trị:</strong></p>
+          <div class="cmd-block">docker ps # Liệt kê container đang chạy
+docker logs -f running-app # Xem logs thời gian thực
+docker stop running-app # Dừng container
+docker rm running-app # Xóa container</div>
+        </div>
+      </div>
     </div>
   `,
 
-  'gitlab-add-member': `
+  'docker-watchtower': `
     <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
-    <div class="guide-card-tag" style="color:#ff8a50;border-color:rgba(255,138,80,0.3);margin-bottom:0.8rem">GitLab Admin</div>
-    <h2>Thêm member vào GitLab Enterprise Self-hosted</h2>
-    <p class="guide-subtitle">4 bước đơn giản để thêm thành viên mới vào dự án trên GitLab Enterprise tự host.</p>
-    <div class="step-list">
-      <div class="step-item"><div class="step-num" style="background:rgba(252,96,25,0.15);color:#ff8a50">B1</div><div class="step-body"><span class="step-context" style="color:#ff8a50;border-color:rgba(255,138,80,0.3)">GITLAB UI — BẤT KỲ TÀI KHOẢN NÀO</span><p>Không cần tài khoản root. Bất kỳ ai có quyền cũng có thể mời:</p><div class="note-block"><strong>Manage → Members → Add member</strong><br>Thêm thành viên qua email của họ.</div></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(252,96,25,0.15);color:#ff8a50">B2</div><div class="step-body"><span class="step-context" style="color:#ff8a50;border-color:rgba(255,138,80,0.3)">GITLAB UI — TÀI KHOẢN ROOT</span><p>Chuyển sang tài khoản root để approve member:</p><div class="note-block"><strong>Vào nút Admin</strong> (biểu tượng cờ lê) → <strong>Admin Area</strong> → <strong>Dashboard</strong><br>→ Bảng <strong>Total Users</strong> → nhấp tên member → <strong>dấu ba chấm dọc</strong> → <strong>Approve</strong></div></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(252,96,25,0.15);color:#ff8a50">B3</div><div class="step-body"><span class="step-context" style="color:#ff8a50;border-color:rgba(255,138,80,0.3)">EMAIL — MEMBER</span><p>Member vào email nhấn <strong>Accept</strong> lời mời tham gia dự án.</p></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(252,96,25,0.15);color:#ff8a50">B4</div><div class="step-body"><span class="step-context" style="color:#ff8a50;border-color:rgba(255,138,80,0.3)">GITLAB UI — MEMBER</span><p>Member đăng nhập GitLab → vào tab <strong>Members</strong> sẽ thấy dự án đã được thêm.</p><div class="warning-block"><strong>Kiểm tra quyền repo:</strong> Member phải có quyền <strong>Developer</strong> trở lên, không được là Guest / Reporter.</div></div></div>
+    <div class="guide-card-tag" style="color:#52cbff;border-color:rgba(82,203,255,0.3);margin-bottom:0.8rem">DOCKER</div>
+    <h2>Tự động cập nhật Container với Watchtower</h2>
+    <p class="guide-subtitle">Giải pháp CD tinh gọn cho môi trường VPS độc lập — Tự động cập nhật container khi có image mới.</p>
+    
+    <div class="thesis-quote">
+      <strong>Watchtower là gì?</strong><br>
+      Là một dịch vụ đóng gói trong Docker, có nhiệm vụ giám sát các container đang chạy trên host. Khi phát hiện một image mới đã được đẩy lên Docker Hub hoặc Registry cá nhân, Watchtower sẽ tự động dừng container cũ, pull image mới về và khởi chạy container mới với chính xác các tham số ban đầu.
+    </div>
+
+    <div class="guide-section-title">⚙️ Cách hoạt động & Sử dụng</div>
+    <p>Cách đơn giản nhất là chạy Watchtower dưới dạng một Docker Container. Dưới đây là cấu hình chuẩn bằng <strong>docker-compose.yml</strong> để chạy Watchtower giám sát và tự động dọn dẹp các image cũ:</p>
+    
+    <div class="cmd-block">version: '3.8'
+
+services:
+  web-app:
+    image: daihoangnguyen17101994/homenest-backend:latest
+    ports:
+      - "5000:5000"
+    restart: always
+
+  watchtower:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --cleanup --interval 300
+    restart: always
+    # --cleanup: Xóa image cũ (dangling image) để tránh đầy đĩa cứng VPS
+    # --interval 300: Quét registry sau mỗi 300 giây (5 phút)</div>
+
+    <div class="guide-section-title">🔥 Các tham số cấu hình nâng cao của Watchtower</div>
+    <ul>
+      <li><strong>--cleanup (-c):</strong> Sau khi container khởi động lại với image mới, xóa sạch image cũ. Đây là cờ <strong>BẮT BUỘC</strong> phải bật để tránh làm đầy ổ cứng VPS.</li>
+      <li><strong>--interval (-i) [seconds]:</strong> Tần suất kiểm tra cập nhật. Ví dụ: `--interval 86400` để quét mỗi ngày một lần.</li>
+      <li><strong>--label-enable:</strong> Chỉ cập nhật các container có chứa nhãn `com.centurylinklabs.watchtower.enable=true`. Giúp bạn chủ động chọn container nào được cập nhật tự động.</li>
+      <li><strong>--run-once:</strong> Chỉ quét registry đúng 1 lần rồi tắt. Rất phù hợp để chạy thông qua cronjob hoặc trigger ngoài.</li>
+    </ul>
+
+    <div class="warning-block">
+      <strong>⚠️ Lưu ý bảo mật:</strong> Watchtower cần truy cập socket `/var/run/docker.sock`. Hãy đảm bảo không expose cổng này ra ngoài internet để tránh bị tấn công đặc quyền root (container escape).
     </div>
   `,
 
-  'gitlab-push': `
+  'docker-opt': `
     <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
-    <div class="guide-card-tag" style="color:#ff8a80;border-color:rgba(255,138,128,0.3);margin-bottom:0.8rem">GitLab Dev</div>
-    <h2>Member push code vào GitLab Enterprise Self-hosted</h2>
-    <p class="guide-subtitle">Setup SSH key ed25519 để push code không cần nhập password mỗi lần.</p>
-    <div class="thesis-quote">Sử dụng SSH key thay vì HTTPS + password là phương pháp chuẩn bảo mật — không bao giờ hỏi password, không lưu credential plain text trên máy.</div>
-    <div class="step-list" style="margin-top:1.5rem">
-      <div class="step-item"><div class="step-num" style="background:rgba(255,82,82,0.15);color:#ff8a80">B1</div><div class="step-body"><span class="step-context" style="color:#ff8a80;border-color:rgba(255,138,128,0.3)">LOCAL — PowerShell / Git Bash</span><p>Tạo SSH key trên máy member:</p><div class="cmd-block">ssh-keygen -t ed25519 -C "email_cua_member"
-# Nhấn Enter liên tục cho nhanh
-# Key sẽ nằm ở: C:\Users\&lt;user&gt;\.ssh\</div></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(255,82,82,0.15);color:#ff8a80">B2</div><div class="step-body"><span class="step-context" style="color:#ff8a80;border-color:rgba(255,138,128,0.3)">LOCAL</span><p>Copy public key:</p><div class="cmd-block">cat ~/.ssh/id_ed25519.pub
-# Copy toàn bộ dòng bắt đầu bằng: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5...</div></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(255,82,82,0.15);color:#ff8a80">B3</div><div class="step-body"><span class="step-context" style="color:#ff8a80;border-color:rgba(255,138,128,0.3)">GITLAB UI</span><p>Thêm SSH key lên GitLab self-host:</p><div class="note-block"><strong>Avatar (góc trên phải)</strong> → <strong>Preferences</strong> → <strong>SSH Keys</strong> → <strong>Add new key</strong><br>→ Paste public key → <strong>Save</strong></div></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(255,82,82,0.15);color:#ff8a80">B4</div><div class="step-body"><span class="step-context" style="color:#ff8a80;border-color:rgba(255,138,128,0.3)">LOCAL</span><p>Test kết nối SSH tới GitLab server:</p><div class="cmd-block">ssh -T git@160.191.88.50
-# Kết quả OK: Welcome to GitLab, @username!</div></div></div>
-      <div class="step-item"><div class="step-num" style="background:rgba(255,82,82,0.15);color:#ff8a80">B5</div><div class="step-body"><span class="step-context" style="color:#ff8a80;border-color:rgba(255,138,128,0.3)">LOCAL</span><p>Push code lên GitLab:</p><div class="cmd-block">git push -u origin &lt;tên-nhánh&gt;</div></div></div>
+    <div class="guide-card-tag" style="color:#bb86fc;border-color:rgba(187,134,252,0.3);margin-bottom:0.8rem">DOCKER</div>
+    <h2>Tối ưu hóa Dockerfile cho môi trường Production</h2>
+    <p class="guide-subtitle">Hướng dẫn viết Dockerfile chuẩn Senior: Nhẹ nhất, nhanh nhất và an toàn nhất.</p>
+
+    <div class="guide-section-title">🐳 Nguyên tắc 1: Multi-stage Builds</div>
+    <p>Multi-stage giúp tách biệt môi trường build (chứa compiler, SDK nặng) khỏi môi trường chạy thực tế (chỉ chứa file nhị phân đã build và thư viện tối thiểu).</p>
+    
+    <div class="cmd-block"># --- Stage 1: Build ---
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci  # Cài đặt dependency sạch
+COPY . .
+RUN npm run build
+
+# --- Stage 2: Runtime ---
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY package*.json ./
+RUN npm ci --only=production # Chỉ cài library production
+COPY --from=builder /app/dist ./dist
+
+# Sử dụng user không có đặc quyền root để bảo mật
+USER node
+EXPOSE 3000
+CMD ["node", "dist/main.js"]</div>
+
+    <div class="guide-section-title">⚡ Các mẹo tối ưu hóa bổ sung</div>
+    <ul>
+      <li><strong>Sử dụng base image tối giản:</strong> Ưu tiên `alpine` hoặc `distroless` (được duy trì bởi Google) để giảm Attack Surface (tiết diện tấn công) và giảm dung lượng image từ 1GB xuống dưới 100MB.</li>
+      <li><strong>Tận dụng Cache Layer:</strong> Docker sẽ cache các dòng lệnh. Luôn sao chép `package.json` hoặc file dependency trước, chạy cài đặt (`npm install` / `pip install`) rồi mới copy toàn bộ source code (`COPY . .`). Khi code thay đổi, Docker sẽ không phải chạy lại lệnh cài đặt thư viện.</li>
+      <li><strong>Sử dụng .dockerignore:</strong> Tạo file `.dockerignore` để loại bỏ `node_modules`, `.git`, `dist`, `.env` khỏi ngữ cảnh build nhằm tăng tốc độ đóng gói.</li>
+    </ul>
+  `,
+
+  'cicd-github': `
+    <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
+    <div class="guide-card-tag" style="color:#82b1ff;border-color:rgba(130,177,255,0.3);margin-bottom:0.8rem">CI/CD Pipeline</div>
+    <h2>CI/CD Pipeline với GitHub Actions + Docker + VPS</h2>
+    <p class="guide-subtitle">Kiến trúc chuẩn: Build độc lập trên runner của GitHub Actions, deploy lên VPS qua SSH SSH key bảo mật.</p>
+    
+    <div class="thesis-quote">
+      <strong>Quy trình hoạt động:</strong><br>
+      Code push lên GitHub → GitHub Actions trigger → Build Docker image → Push lên Docker Hub (Private) → Kết nối SSH vào VPS → Ra lệnh cho Docker Compose kéo image mới và up đè.
     </div>
-    <div class="warning-block" style="margin-top:1.5rem"><strong>⚠️ Kiểm tra quyền repo:</strong> Member phải là <strong>Developer</strong>, không được là Guest / Reporter — nếu không sẽ bị từ chối push dù SSH key đúng.</div>
+
+    <div class="guide-section-title">📝 Cấu hình Workflow (.github/workflows/deploy.yml)</div>
+    <div class="cmd-block">name: Production Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: \${{ secrets.DOCKERHUB_USERNAME }}
+          password: \${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: \${{ secrets.DOCKERHUB_USERNAME }}/my-app:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute remote SSH commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: \${{ secrets.VPS_HOST }}
+          username: \${{ secrets.VPS_USER }}
+          key: \${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/my-app
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker image prune -f</div>
+  `,
+
+  'cicd-gitlab': `
+    <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
+    <div class="guide-card-tag" style="color:#ff8a80;border-color:rgba(255,138,128,0.3);margin-bottom:0.8rem">CI/CD Pipeline</div>
+    <h2>CI/CD với GitLab CI/CD & Self-Hosted Runner</h2>
+    <p class="guide-subtitle">Cấu hình GitLab pipeline tối ưu chạy trên VPS riêng bằng Docker Executor.</p>
+    
+    <div class="guide-section-title">⚙️ Cấu hình .gitlab-ci.yml</div>
+    <div class="cmd-block">stages:
+  - build
+  - deploy
+
+variables:
+  DOCKER_IMAGE: registry.gitlab.com/my-group/my-project:latest
+
+# Bật Cache dependencies để tăng tốc độ build
+cache:
+  key: \${CI_COMMIT_REF_SLUG}
+  paths:
+    - .npm/
+
+build_job:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - docker login -u \${CI_REGISTRY_USER} -p \${CI_REGISTRY_PASSWORD} \${CI_REGISTRY}
+  script:
+    - docker build --cache-from \${DOCKER_IMAGE} -t \${DOCKER_IMAGE} .
+    - docker push \${DOCKER_IMAGE}
+
+deploy_job:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan $VPS_HOST >> ~/.ssh/known_hosts
+  script:
+    - ssh $VPS_USER@$VPS_HOST "cd /app && docker compose pull && docker compose up -d"</div>
+  `,
+
+  'git-ssh': `
+    <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
+    <div class="guide-card-tag" style="color:#ffb74d;border-color:rgba(255,183,77,0.3);margin-bottom:0.8rem">GIT</div>
+    <h2>Cấu hình SSH Keys cho Nhiều Tài khoản GitHub & GitLab</h2>
+    <p class="guide-subtitle">Giải quyết triệt để lỗi xung đột phân quyền SSH khi dùng nhiều tài khoản GitHub/GitLab trên cùng một máy.</p>
+
+    <div class="guide-section-title">🔑 Bước 1: Tạo các SSH Key riêng biệt</div>
+    <div class="cmd-block"># Tạo key cho tài khoản công việc (Work)
+ssh-keygen -t ed25519 -C "work@company.com" -f ~/.ssh/id_ed25519_work
+
+# Tạo key cho tài khoản cá nhân (Personal)
+ssh-keygen -t ed25519 -C "personal@email.com" -f ~/.ssh/id_ed25519_personal</div>
+
+    <div class="guide-section-title">📝 Bước 2: Cấu hình file SSH Config</div>
+    <p>Mở hoặc tạo mới file cấu hình SSH tại đường dẫn `+ "`~/.ssh/config`" +` và định nghĩa định danh riêng biệt:</p>
+    <div class="cmd-block"># Tài khoản Công việc (GitLab/GitHub)
+Host github.com-work
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519_work
+
+# Tài khoản Cá nhân
+Host github.com-personal
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519_personal</div>
+
+    <div class="guide-section-title">🚀 Bước 3: Sử dụng khi clone dự án</div>
+    <p>Khi clone, bạn thay đổi phần domain tương ứng với Host cấu hình phía trên:</p>
+    <div class="cmd-block"># Thay vì clone: git clone git@github.com:work-org/project.git
+# Hãy clone bằng:
+git clone git@github.com-work:work-org/project.git</div>
+  `,
+
+  'k8s-core': `
+    <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
+    <div class="guide-card-tag" style="color:#64b5f6;border-color:rgba(100,181,246,0.3);margin-bottom:0.8rem">KUBERNETES</div>
+    <h2>Kubernetes (K8s) Cơ Bản: Pods, Deployments & Services</h2>
+    <p class="guide-subtitle">Kiến trúc lõi điều phối container tự động cho hệ thống lớn.</p>
+
+    <div class="guide-section-title">☸️ Phân tích các khái niệm chính</div>
+    <ul>
+      <li><strong>Pod:</strong> Đơn vị nhỏ nhất có thể deploy được trong K8s. Một Pod chứa một hoặc nhiều container chia sẻ chung Network Namespace và Storage Volume.</li>
+      <li><strong>Deployment:</strong> Trình quản lý khai báo (Declarative Controller). Giúp duy trì số lượng bản sao Pod mong muốn, hỗ trợ cơ chế tự phục hồi (Self-Healing) và cập nhật ứng dụng không thời gian chết (Rolling Update).</li>
+      <li><strong>Service:</strong> Cung cấp một IP nội bộ hoặc IP Public ổn định để định tuyến traffic đến các Pod có nhãn (Labels) tương ứng, hoạt động như một Load Balancer nội bộ.</li>
+    </ul>
+
+    <div class="guide-section-title">📄 Ví dụ file cấu hình Manifest YAML</div>
+    <div class="cmd-block">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-deployment
+  labels:
+    app: my-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-app-container
+        image: username/my-app:v1.0
+        ports:
+        - containerPort: 3000
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-service
+spec:
+  selector:
+    app: my-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+  type: ClusterIP</div>
+  `,
+
+  'k8s-config': `
+    <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
+    <div class="guide-card-tag" style="color:#4dd0e1;border-color:rgba(77,208,225,0.3);margin-bottom:0.8rem">KUBERNETES</div>
+    <h2>Quản lý Cấu hình K8s: ConfigMap, Secret & Ingress</h2>
+    <p class="guide-subtitle">Làm việc với dữ liệu cấu hình nhạy cảm và mở ứng dụng ra thế giới bên ngoài.</p>
+
+    <div class="guide-section-title">🔑 Tạo Kubernetes Secret an toàn</div>
+    <div class="cmd-block"># Tạo secret trực tiếp bằng dòng lệnh
+kubectl create secret generic app-db-secret \\
+  --from-literal=DB_PASSWORD='my-secure-password'</div>
+
+    <div class="guide-section-title">📄 Nhúng Secret và ConfigMap vào Deployment</div>
+    <div class="cmd-block">spec:
+  containers:
+  - name: app
+    image: my-app:latest
+    env:
+      - name: DB_HOST
+        valueFrom:
+          configMapKeyRef:
+            name: app-configmap
+            key: DB_HOST
+      - name: DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: app-db-secret
+            key: DB_PASSWORD</div>
+
+    <div class="guide-section-title">🌐 Định tuyến Ingress (Nginx Ingress Controller)</div>
+    <div class="cmd-block">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: app.company.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-app-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - app.company.com
+    secretName: app-tls-cert</div>
+  `,
+
+  'k8s-helm': `
+    <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
+    <div class="guide-card-tag" style="color:#9575cd;border-color:rgba(149,117,205,0.3);margin-bottom:0.8rem">KUBERNETES</div>
+    <h2>Đóng gói Ứng dụng Kubernetes với Helm Chart</h2>
+    <p class="guide-subtitle">Quản lý manifest K8s như một chuyên gia. Viết template và triển khai ứng dụng bằng Helm.</p>
+
+    <div class="guide-section-title">📦 Khởi tạo Helm Chart mới</div>
+    <div class="cmd-block"># Tạo cấu trúc thư mục Helm Chart
+helm create my-webapp</div>
+    
+    <p>Thư mục tạo ra bao gồm:</p>
+    <ul>
+      <li><strong>Chart.yaml:</strong> Chứa thông tin mô tả metadata và phiên bản của Chart.</li>
+      <li><strong>values.yaml:</strong> Nơi lưu trữ tất cả các biến số cấu hình (replicaCount, image, port).</li>
+      <li><strong>templates/:</strong> Chứa các file YAML manifest (deployment, service, ingress) được viết dưới dạng template Golang.</li>
+    </ul>
+
+    <div class="guide-section-title">🚀 Deploy & Quản lý Chart</div>
+    <div class="cmd-block"># Cài đặt Chart lên K8s Cluster
+helm install my-release ./my-webapp
+
+# Nâng cấp phiên bản khi thay đổi values
+helm upgrade my-release ./my-webapp --set image.tag="v2.0"
+
+# Rollback về phiên bản cũ ngay lập tức nếu lỗi xảy ra
+helm rollback my-release 1</div>
+  `,
+
+  'aapanel-proxy': `
+    <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
+    <div class="guide-card-tag" style="color:#81c784;border-color:rgba(129,199,132,0.3);margin-bottom:0.8rem">VPS & AAPANEL</div>
+    <h2>aaPanel: Nginx Reverse Proxy Docker & Let\'s Encrypt</h2>
+    <p class="guide-subtitle">Hướng dẫn từng bước cấu hình Nginx làm proxy ngược để expose ứng dụng Docker an toàn.</p>
+
+    <div class="guide-section-title">🌐 Bước 1: Khởi chạy container Docker của bạn</div>
+    <p>Đảm bảo container của bạn đang chạy ở một cổng nội bộ trên VPS (Ví dụ cổng 8080):</p>
+    <div class="cmd-block">docker run -d -p 127.0.0.1:8080:3000 --name web-service my-app:latest
+# 127.0.0.1 đảm bảo cổng 8080 không bị expose ra Internet thông qua Firewall VPS.</div>
+
+    <div class="guide-section-title">🖥️ Bước 2: Tạo Website trên aaPanel</div>
+    <ul>
+      <li>Vào mục **Website** → Click **Add Site**.</li>
+      <li>Nhập domain của bạn (ví dụ: `+ "`app.company.com`" +`).</li>
+      <li>Phần **PHP Version** chọn **Pure Static** (vì chúng ta chỉ dùng Nginx để chuyển tiếp traffic).</li>
+      <li>Nhấn **Submit** để khởi tạo.</li>
+    </ul>
+
+    <div class="guide-section-title">🛡️ Bước 3: Cài đặt Let's Encrypt SSL</div>
+    <ul>
+      <li>Tại website vừa tạo, nhấn vào mục **SSL** → Chọn tab **Let's Encrypt**.</li>
+      <li>Tích chọn domain của bạn và nhấn **Apply** để nhận chứng chỉ SSL miễn phí.</li>
+      <li>Bật tùy chọn **Force HTTPS** ở góc trên để mã hóa toàn bộ dữ liệu.</li>
+    </ul>
+
+    <div class="guide-section-title">⚙️ Bước 4: Thiết lập Reverse Proxy</div>
+    <ul>
+      <li>Vào tab **Reverse Proxy** → Nhấn **Add Reverse Proxy**.</li>
+      <li>Đặt tên Proxy (Ví dụ: `+ "`docker-app`" +`).</li>
+      <li>**Target URL:** Nhập địa chỉ chạy container Docker: `+ "`http://127.0.0.1:8080`" +`.</li>
+      <li>Nhấn **Submit**. aaPanel Nginx sẽ tự viết luật định tuyến chuyển traffic HTTPS ngoài internet vào container Docker của bạn một cách an toàn nhất!</li>
+    </ul>
+  `,
+
+  'aws-vpc': `
+    <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
+    <div class="guide-card-tag" style="color:#e0e0e0;border-color:rgba(224,224,224,0.3);margin-bottom:0.8rem">AWS CLOUD</div>
+    <h2>Kiến trúc mạng AWS VPC 3-Tier chuẩn Production</h2>
+    <p class="guide-subtitle">Thiết kế hạ tầng mạng đám mây cô lập, bảo mật và chịu lỗi cao trên AWS.</p>
+
+    <div class="guide-section-title">☁️ Cấu trúc phân lớp (3-Tier Layout)</div>
+    <p>Để đảm bảo bảo mật và chống tấn công, mạng AWS VPC được chia nhỏ thành 3 lớp riêng biệt trên tối thiểu 2 Availability Zones (AZs) để đảm bảo High Availability:</p>
+    <ul>
+      <li><strong>Tầng 1: Web / Public Subnets:</strong> 
+        <ul>
+          <li>Chỉ chứa các tài nguyên giao tiếp trực tiếp với internet như **Application Load Balancer (ALB)** và Bastion Host.</li>
+          <li>Định tuyến traffic trực tiếp thông qua **Internet Gateway (IGW)**.</li>
+        </ul>
+      </li>
+      <li><strong>Tầng 2: App / Private Subnets:</strong>
+        <ul>
+          <li>Chứa máy chủ ứng dụng (EC2, ECS, EKS). Không có IP Public và không thể truy cập trực tiếp từ Internet.</li>
+          <li>Định tuyến kết nối chiều đi (outbound) ra internet để tải bản vá phần mềm thông qua **NAT Gateway** đặt ở Public Subnet.</li>
+        </ul>
+      </li>
+      <li><strong>Tầng 3: Data / Isolated Private Subnets:</strong>
+        <ul>
+          <li>Chứa Database (RDS, DynamoDB) và Cache cluster (Redis).</li>
+          <li>Hoàn toàn cô lập, không có định tuyến ra internet kể cả chiều đi, chỉ cho phép kết nối từ lớp App thông qua Security Group.</li>
+        </ul>
+      </li>
+    </ul>
+
+    <div class="warning-block">
+      <strong>⚠️ Mẹo tiết kiệm chi phí:</strong> NAT Gateway trên AWS tính tiền theo giờ và dung lượng dữ liệu đi qua. Đối với môi trường Dev/Staging, bạn có thể cân nhắc sử dụng 1 NAT Gateway cho cả 3 AZ để giảm chi phí, thay vì dùng 3 NAT Gateway như trên môi trường Production thực tế.
+    </div>
+  `,
+
+  'aws-compute': `
+    <button class="guide-detail-back" onclick="closeGuide()">← Quay lại danh sách</button>
+    <div class="guide-card-tag" style="color:#f06292;border-color:rgba(240,98,146,0.3);margin-bottom:0.8rem">AWS CLOUD</div>
+    <h2>Deploy Ứng dụng với AWS EC2, S3 & CloudFront CDN</h2>
+    <p class="guide-subtitle">Kết hợp máy chủ ảo EC2 với kho lưu trữ tĩnh S3 và mạng lưới phân phối CDN CloudFront.</p>
+
+    <div class="guide-section-title">🖥️ 1. Máy chủ EC2 và Deploy App</div>
+    <p>Sử dụng EC2 để chạy mã nguồn backend. Khuyến nghị cấu hình Auto Scaling Group cùng với Application Load Balancer để tự động mở rộng tài nguyên khi chịu tải cao.</p>
+
+    <div class="guide-section-title">📦 2. Kho lưu trữ tĩnh AWS S3</div>
+    <p>Tuyệt đối không lưu trữ ảnh, video hoặc file tải về của người dùng trực tiếp trên ổ đĩa EC2 (vì EC2 là tài nguyên tạm thời - ephemeral, có thể bị xóa/thay thế khi scale). Hãy sử dụng **AWS S3** để lưu trữ lâu dài với độ bền dữ liệu đạt 99.999999999% (11 số 9).</p>
+
+    <div class="guide-section-title">⚡ 3. Phân phối CDN qua AWS CloudFront</div>
+    <p>Để tối ưu tốc độ tải ảnh/video cho người dùng cuối và giảm tải cho S3, ta đặt một mạng lưới CDN **CloudFront** phía trước S3:</p>
+    <ul>
+      <li>Người dùng gửi request lấy ảnh → CloudFront kiểm tra cache ở các Edge Location gần người dùng nhất để trả về ngay lập tức.</li>
+      <li>Chỉ khi cache hết hạn, CloudFront mới kéo dữ liệu từ S3 (Origin) và lưu lại cache.</li>
+      <li>Cấu hình **Origin Access Control (OAC)** để đảm bảo người dùng không thể truy cập trực tiếp URL của S3, buộc phải đi qua CloudFront CDN nhằm bảo mật dữ liệu.</li>
+    </ul>
   `
 };
 
@@ -522,8 +1015,10 @@ function openGuide(id) {
   const detail = document.getElementById('guideDetail');
   const grid = document.getElementById('guidesGrid');
   const content = document.getElementById('guideDetailContent');
+  
   document.querySelectorAll('.guide-card').forEach(c => c.classList.remove('selected'));
   content.innerHTML = guideContent[id] || '<p>Nội dung không tìm thấy.</p>';
+  
   grid.style.display = 'none';
   detail.style.display = 'block';
   detail.scrollTop = 0;
@@ -534,3 +1029,318 @@ function closeGuide() {
   document.getElementById('guideDetail').style.display = 'none';
   document.getElementById('guidesGrid').style.display = 'grid';
 }
+
+/* ══════════════════════════════════════
+   TAB 3: CONFIG GENERATORS LOGIC
+   ══════════════════════════════════════ */
+let activeGenTab = 'docker';
+
+function switchGenTab(tabId) {
+  activeGenTab = tabId;
+  document.querySelectorAll('#content-generators .filter-btn').forEach(btn => btn.classList.remove('active'));
+  document.getElementById('btn-gen-' + tabId).classList.add('active');
+  
+  document.getElementById('gen-form-docker').style.display = 'none';
+  document.getElementById('gen-form-github').style.display = 'none';
+  document.getElementById('gen-form-aapanel').style.display = 'none';
+  document.getElementById('gen-form-k8s').style.display = 'none';
+  
+  document.getElementById('gen-form-' + tabId).style.display = 'block';
+  generateConfigs();
+}
+
+function generateConfigs() {
+  const codeBlock1 = document.getElementById('output-code-block');
+  const codeBlock2 = document.getElementById('output-code-block-2');
+  const filename1 = document.getElementById('output-filename');
+  const filename2 = document.getElementById('output-filename-2');
+  const wrapper2 = document.getElementById('output-filename-2-wrapper');
+  
+  wrapper2.style.display = 'none';
+  
+  if (activeGenTab === 'docker') {
+    filename1.innerText = 'Dockerfile';
+    const lang = document.getElementById('docker-lang').value;
+    const port = document.getElementById('docker-port').value || '3000';
+    const useMultistage = document.getElementById('docker-multistage').checked;
+    const useDb = document.getElementById('docker-db').checked;
+    
+    let dockerfile = '';
+    let compose = '';
+    
+    if (lang === 'node') {
+      if (useMultistage) {
+        dockerfile = `# Multi-stage Build cho Node.js\nFROM node:22-alpine AS builder\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci\nCOPY . .\nRUN npm run build\n\nFROM node:22-alpine AS runner\nWORKDIR /app\nENV NODE_ENV=production\nCOPY package*.json ./\nRUN npm ci --only=production\nCOPY --from=builder /app/dist ./dist\nUSER node\nEXPOSE ${port}\nCMD ["node", "dist/main.js"]`;
+      } else {
+        dockerfile = `# Dockerfile cơ bản cho Node.js\nFROM node:22-alpine\nWORKDIR /app\nCOPY package*.json ./\nRUN npm install\nCOPY . .\nEXPOSE ${port}\nCMD ["npm", "start"]`;
+      }
+      
+      compose = `version: '3.8'\n\nservices:\n  app:\n    build:\n      context: .\n      dockerfile: Dockerfile\n    ports:\n      - "${port}:${port}"\n    restart: always`;
+    } else if (lang === 'python') {
+      if (useMultistage) {
+        dockerfile = `# Multi-stage Build cho Python FastAPI\nFROM python:3.12-slim AS builder\nWORKDIR /app\nRUN pip install --no-cache-dir poetry\nCOPY pyproject.toml poetry.lock ./\nRUN poetry export -f requirements.txt --output requirements.txt --without-hashes\n\nFROM python:3.12-slim AS runner\nWORKDIR /app\nCOPY --from=builder /app/requirements.txt .\nRUN pip install --no-cache-dir -r requirements.txt\nCOPY . .\nUSER 1000\nEXPOSE ${port}\nCMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "${port}"]`;
+      } else {
+        dockerfile = `# Dockerfile cơ bản cho Python\nFROM python:3.12-slim\nWORKDIR /app\nCOPY requirements.txt ./\nRUN pip install -r requirements.txt\nCOPY . .\nEXPOSE ${port}\nCMD ["python", "main.py"]`;
+      }
+      
+      compose = `version: '3.8'\n\nservices:\n  app:\n    build:\n      context: .\n      dockerfile: Dockerfile\n    ports:\n      - "${port}:${port}"\n    restart: always`;
+    } else if (lang === 'go') {
+      dockerfile = `# Multi-stage Build cho Go (Golang)\nFROM golang:1.22-alpine AS builder\nWORKDIR /app\nCOPY go.mod go.sum ./\nRUN go mod download\nCOPY . .\nRUN CGO_ENABLED=0 GOOS=linux go build -o main .\n\nFROM alpine:latest\nWORKDIR /app\nCOPY --from=builder /app/main .\nEXPOSE ${port}\nCMD ["./main"]`;
+      compose = `version: '3.8'\n\nservices:\n  app:\n    build:\n      context: .\n      dockerfile: Dockerfile\n    ports:\n      - "${port}:${port}"\n    restart: always`;
+    } else if (lang === 'php') {
+      dockerfile = `# Dockerfile cho PHP Laravel\nFROM php:8.3-fpm-alpine\nWORKDIR /var/web\nRUN docker-php-ext-install pdo pdo_mysql\nCOPY . .\nEXPOSE 9000\nCMD ["php-fpm"]`;
+      compose = `version: '3.8'\n\nservices:\n  app:\n    build:\n      context: .\n      dockerfile: Dockerfile\n    volumes:\n      - .:/var/web\n    restart: always`;
+    }
+    
+    if (useDb) {
+      compose += `\n\n  database:\n    image: postgres:16-alpine\n    environment:\n      POSTGRES_DB: app_db\n      POSTGRES_USER: app_user\n      POSTGRES_PASSWORD: secure_password\n    volumes:\n      - pgdata:/var/lib/postgresql/data\n    ports:\n      - "5432:5432"\n    restart: always\n\n  cache:\n    image: redis:7-alpine\n    ports:\n      - "6379:6379"\n    restart: always\n\nvolumes:\n  pgdata:`;
+    }
+    
+    codeBlock1.innerText = dockerfile;
+    codeBlock2.innerText = compose;
+    
+    filename2.innerText = 'docker-compose.yml';
+    wrapper2.style.display = 'block';
+    
+  } else if (activeGenTab === 'github') {
+    filename1.innerText = '.github/workflows/deploy.yml';
+    const branch = document.getElementById('gh-branch').value || 'main';
+    const image = document.getElementById('gh-image').value || 'username/my-app';
+    const path = document.getElementById('gh-deploy-path').value || '/home/ubuntu/my-app';
+    
+    codeBlock1.innerText = `name: Deploy Pipeline\n\non:\n  push:\n    branches: [ ${branch} ]\n\njobs:\n  build-and-push:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout Code\n        uses: actions/checkout@v4\n\n      - name: Login to Docker Hub\n        uses: docker/login-action@v3\n        with:\n          username: \${{ secrets.DOCKERHUB_USERNAME }}\n          password: \${{ secrets.DOCKERHUB_TOKEN }}\n\n      - name: Build and Push\n        uses: docker/build-push-action@v5\n        with:\n          context: .\n          push: true\n          tags: ${image}:latest\n\n  deploy:\n    needs: build-and-push\n    runs-on: ubuntu-latest\n    steps:\n      - name: SSH to VPS & Run Container\n        uses: appleboy/ssh-action@v1.0.3\n        with:\n          host: \${{ secrets.VPS_HOST }}\n          username: \${{ secrets.VPS_USER }}\n          key: \${{ secrets.VPS_SSH_KEY }}\n          script: |\n            cd ${path}\n            docker compose pull\n            docker compose up -d --remove-orphans\n            docker image prune -f`;
+    
+  } else if (activeGenTab === 'aapanel') {
+    filename1.innerText = 'nginx-reverse-proxy.conf';
+    const domain = document.getElementById('aa-domain').value || 'app.domain.com';
+    const port = document.getElementById('aa-port').value || '3000';
+    
+    codeBlock1.innerText = `# Cấu hình Reverse Proxy Nginx cho aaPanel\nserver {\n    listen 80;\n    server_name ${domain};\n\n    # Chuyển tiếp HTTP sang HTTPS (Khuyến nghị)\n    return 301 https://$host$request_uri;\n}\n\nserver {\n    listen 443 ssl http2;\n    server_name ${domain};\n\n    # Đường dẫn SSL của aaPanel (Sẽ tự động điền khi cài Let's Encrypt)\n    ssl_certificate /www/server/panel/vhost/cert/${domain}/fullchain.pem;\n    ssl_certificate_key /www/server/panel/vhost/cert/${domain}/privkey.pem;\n    ssl_protocols TLSv1.2 TLSv1.3;\n\n    location / {\n        proxy_pass http://127.0.0.1:${port};\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto $scheme;\n        \n        # Hỗ trợ WebSockets (Nếu app cần)\n        proxy_http_version 1.1;\n        proxy_set_header Upgrade $http_upgrade;\n        proxy_set_header Connection "upgrade";\n    }\n}`;
+    
+  } else if (activeGenTab === 'k8s') {
+    filename1.innerText = 'k8s-manifest.yaml';
+    const name = document.getElementById('k8s-name').value || 'my-app';
+    const image = document.getElementById('k8s-image').value || 'username/my-app:latest';
+    const replicas = document.getElementById('k8s-replicas').value || '3';
+    const port = document.getElementById('k8s-port').value || '3000';
+    
+    codeBlock1.innerText = `apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: ${name}-deployment\n  labels:\n    app: ${name}\nspec:\n  replicas: ${replicas}\n  selector:\n    matchLabels:\n      app: ${name}\n  template:\n    metadata:\n      labels:\n        app: ${name}\n    spec:\n      containers:\n      - name: ${name}-container\n        image: ${image}\n        ports:\n        - containerPort: ${port}\n        resources:\n          limits:\n            cpu: "500m"\n            memory: "512Mi"\n          requests:\n            cpu: "250m"\n            memory: "256Mi"\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: ${name}-service\nspec:\n  selector:\n    app: ${name}\n  ports:\n    - protocol: TCP\n      port: 80\n      targetPort: ${port}\n  type: ClusterIP`;
+  }
+}
+
+function copyGenCode(elementId) {
+  const code = document.getElementById(elementId).innerText;
+  navigator.clipboard.writeText(code).then(() => {
+    alert('Đã sao chép đoạn mã cấu hình thành công!');
+  }).catch(err => {
+    console.error('Không thể copy code: ', err);
+  });
+}
+
+/* ══════════════════════════════════════
+   TAB 4: DEVOPS QUIZ SYSTEM LOGIC
+   ══════════════════════════════════════ */
+const quizQuestions = [
+  {
+    question: "Tại sao trong Dockerfile ta nên viết 'COPY package.json .' và 'RUN npm install' trước khi 'COPY . .'?",
+    options: [
+      "Để tránh các lỗ hổng bảo mật khi đóng gói image.",
+      "Để node_modules nằm trong thư mục gốc của container.",
+      "Để tận dụng cơ chế cache layer của Docker, giúp đẩy nhanh tốc độ build khi chỉ sửa code mà không thêm thư viện mới.",
+      "Lệnh này không mang ý nghĩa tối ưu, chỉ là thói quen của lập trình viên."
+    ],
+    correct: 2,
+    explanation: "Docker build image theo từng layer (dòng lệnh). Khi rebuild, nếu file package.json không đổi, Docker sẽ lấy cache của layer cài đặt node_modules cũ thay vì chạy lại từ đầu, giúp rút ngắn thời gian build từ vài phút xuống vài giây."
+  },
+  {
+    question: "Loại Service nào trong Kubernetes được sử dụng để phân phối traffic từ bên ngoài Internet vào trong cluster qua IP Public tĩnh do Cloud Provider cấp?",
+    options: [
+      "ClusterIP",
+      "NodePort",
+      "LoadBalancer",
+      "ExternalName"
+    ],
+    correct: 2,
+    explanation: "Loại Service 'LoadBalancer' sẽ tương tác trực tiếp với Cloud API để thuê một Load Balancer vật lý (ví dụ Classic/Application ALB trên AWS) và định tuyến traffic trực tiếp từ internet vào cluster."
+  },
+  {
+    question: "Để triển khai hạ tầng High Availability trên AWS, các Private Subnets ở 3 Availability Zones (AZs) khác nhau nên kết nối ra internet qua NAT Gateway như thế nào để vừa an toàn vừa tối ưu tính chịu lỗi?",
+    options: [
+      "Sử dụng 1 NAT Gateway duy nhất đặt ở Public Subnet của AZ đầu tiên để tiết kiệm chi phí.",
+      "Cấu hình 3 NAT Gateways phân tán trên cả 3 AZ (mỗi AZ một cái) để đảm bảo cô lập sự cố.",
+      "Định tuyến trực tiếp Private Subnet ra Internet Gateway.",
+      "Liên kết các Private Subnet thông qua VPC Peering."
+    ],
+    correct: 1,
+    explanation: "Mặc dù 1 NAT Gateway rẻ hơn, nhưng nếu AZ chứa NAT Gateway đó bị sập thì cả 3 Private Subnet đều mất mạng. Do đó, môi trường production tiêu chuẩn yêu cầu chạy 3 NAT Gateways tương ứng với 3 AZ để cô lập sự cố."
+  },
+  {
+    question: "Nguyên tắc bảo mật nào dưới đây là BẮT BUỘC khi chạy container Node.js trong môi trường Production?",
+    options: [
+      "Luôn luôn chạy container dưới quyền user root mặc định để tránh lỗi ghi file.",
+      "Sử dụng chỉ thị 'USER node' trong Dockerfile để chạy container dưới quyền user không có đặc quyền root.",
+      "Gắn cờ '--privileged' khi khởi động container.",
+      "Vô hiệu hóa tính năng Read-Only Root Filesystem."
+    ],
+    correct: 1,
+    explanation: "Chạy container dưới quyền user không đặc quyền (non-root) là nguyên tắc tối quan trọng để ngăn chặn lỗi thoát container (container escape) - kẻ tấn công nếu chiếm được app cũng không thể lấy quyền root máy chủ vật lý."
+  },
+  {
+    question: "Làm thế nào để truyền API Key bí mật vào Pod trong Kubernetes một cách an toàn và bảo mật nhất?",
+    options: [
+      "Nhúng trực tiếp API Key vào file YAML Deployment.",
+      "Sử dụng ConfigMap và mount vào container dưới dạng biến môi trường.",
+      "Khởi tạo một tài nguyên Secret (Opaque) lưu trữ key mã hóa Base64, rồi mount vào Pod dưới dạng Env hoặc file config.",
+      "Ghi trực tiếp Key vào mã nguồn trước khi build Dockerfile."
+    ],
+    correct: 2,
+    explanation: "Kubernetes Secret được sinh ra để lưu trữ các thông tin nhạy cảm. Nó được mã hóa base64 và có thể cấu hình phân quyền truy cập chặt chẽ hơn nhiều so với ConfigMap thông thường."
+  },
+  {
+    question: "Khi sử dụng aaPanel trên VPS, nếu ứng dụng Docker chạy cổng 8080 nội bộ, ta cấu hình Nginx Reverse Proxy như thế nào để domain trỏ vào container mà không bị xung đột?",
+    options: [
+      "Mở cổng 8080 của Docker ra ngoài và bắt người dùng gõ domain kèm port :8080.",
+      "Tạo website tĩnh bằng tên miền trên aaPanel, sau đó thiết lập Reverse Proxy trỏ đến Target URL: http://127.0.0.1:8080.",
+      "Thay đổi cấu hình cổng mặc định của Nginx trên VPS sang 8080.",
+      "Map trực tiếp cổng 80:8080 của container ra cổng 80 của VPS bằng docker-compose."
+    ],
+    correct: 1,
+    explanation: "Tạo website tĩnh trên aaPanel giúp bạn có cấu hình Nginx riêng cho domain đó, sau đó tạo luật proxy chuyển tiếp HTTP/HTTPS sang container đang chạy cổng 8080 ở IP nội bộ, vừa an toàn (không lộ cổng 8080) vừa dễ cài SSL Let's Encrypt."
+  },
+  {
+    question: "Khi sử dụng Watchtower để tự động cập nhật image trên VPS, cờ/tham số nào giúp tự động xóa bỏ các Docker image cũ (unused/dangling) sau khi đã khởi chạy container mới thành công?",
+    options: [
+      "--interval 300",
+      "--cleanup (hoặc biến môi trường WATCHTOWER_CLEANUP=true)",
+      "--label-enable",
+      "--stop-timeout 30s"
+    ],
+    correct: 1,
+    explanation: "Mỗi khi container được cập nhật, image cũ sẽ bị dán nhãn <none> (dangling). Nếu không sử dụng cờ `--cleanup`, các image thừa này sẽ nằm lại trên đĩa cứng và làm đầy ổ cứng VPS của bạn sau vài lần cập nhật."
+  },
+  {
+    question: "Trong cấu hình GitLab CI/CD (.gitlab-ci.yml), sự khác biệt cốt lõi giữa từ khóa 'cache' và 'artifacts' là gì?",
+    options: [
+      "Cache dùng để lưu dữ liệu giữa các lần chạy job của pipeline (ví dụ node_modules); Artifacts lưu trữ sản phẩm đầu ra (binary, test report) để chuyển giữa các stage hoặc tải về.",
+      "Cache lưu trên VPS local của Runner, Artifacts bắt buộc phải lưu trên Cloud Object Storage.",
+      "Hai từ khóa này hoàn toàn giống nhau, có thể dùng thay thế nhau ở mọi vị trí.",
+      "Cache bắt buộc phải có cho mọi pipeline, còn Artifacts thì không bao giờ dùng tới."
+    ],
+    correct: 0,
+    explanation: "Cache được thiết kế để tăng tốc độ chạy của job tiếp theo bằng cách lưu các tệp phụ thuộc không thay đổi nhiều. Artifacts được thiết kế để truyền tải dữ liệu đầu ra giữa các stage khác nhau trong cùng một lần chạy pipeline."
+  }
+];
+
+let quizState = {
+  currentIdx: 0,
+  score: 0,
+  answered: false
+};
+
+function startQuiz() {
+  document.getElementById('quizStartPanel').style.display = 'none';
+  document.getElementById('quizResultPanel').style.display = 'none';
+  document.getElementById('quizPlayPanel').style.display = 'block';
+  
+  quizState.currentIdx = 0;
+  quizState.score = 0;
+  
+  renderQuestion();
+}
+
+function renderQuestion() {
+  quizState.answered = false;
+  document.getElementById('quizExplanationBox').style.display = 'none';
+  
+  const q = quizQuestions[quizState.currentIdx];
+  document.getElementById('currentQuestionNum').innerText = quizState.currentIdx + 1;
+  document.getElementById('quizProgressFill').style.width = ((quizState.currentIdx + 1) / quizQuestions.length * 100) + '%';
+  document.getElementById('quizQuestionText').innerText = q.question;
+  
+  const optionsList = document.getElementById('quizOptionsList');
+  optionsList.innerHTML = '';
+  
+  q.options.forEach((opt, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-option-btn';
+    btn.innerText = opt;
+    btn.onclick = () => selectOption(idx);
+    optionsList.appendChild(btn);
+  });
+}
+
+function selectOption(selectedIdx) {
+  if (quizState.answered) return;
+  quizState.answered = true;
+  
+  const q = quizQuestions[quizState.currentIdx];
+  const optionButtons = document.querySelectorAll('.quiz-option-btn');
+  
+  optionButtons.forEach((btn, idx) => {
+    btn.disabled = true; // Khóa các nút lại
+    if (idx === q.correct) {
+      btn.classList.add('correct');
+    } else if (idx === selectedIdx) {
+      btn.classList.add('incorrect');
+    }
+  });
+  
+  if (selectedIdx === q.correct) {
+    quizState.score++;
+  }
+  
+  // Hiển thị giải thích
+  document.getElementById('quizExplanationText').innerText = q.explanation;
+  document.getElementById('quizExplanationBox').style.display = 'block';
+  
+  // Cuộn xuống xem giải thích
+  setTimeout(() => {
+    document.getElementById('quizExplanationBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 100);
+}
+
+function nextQuestion() {
+  quizState.currentIdx++;
+  if (quizState.currentIdx < quizQuestions.length) {
+    renderQuestion();
+  } else {
+    showQuizResult();
+  }
+}
+
+function showQuizResult() {
+  document.getElementById('quizPlayPanel').style.display = 'none';
+  document.getElementById('quizResultPanel').style.display = 'block';
+  
+  const scoreBadge = document.getElementById('quizScoreText');
+  const gradeText = document.getElementById('quizGradeText');
+  const feedbackText = document.getElementById('quizFeedbackText');
+  
+  scoreBadge.innerText = `${quizState.score} / ${quizQuestions.length}`;
+  
+  const percent = (quizState.score / quizQuestions.length) * 100;
+  if (percent === 100) {
+    gradeText.innerText = '🛡️ DevOps Architect Master';
+    feedbackText.innerText = 'Tuyệt vời! Bạn có kiến thức cực kỳ vững chắc về DevOps ở cấp độ chuyên gia cao cấp.';
+  } else if (percent >= 75) {
+    gradeText.innerText = '🚀 DevOps Senior';
+    feedbackText.innerText = 'Rất ấn tượng! Bạn nắm vững hầu hết các thực tiễn vận hành và kiến trúc hạ tầng.';
+  } else if (percent >= 50) {
+    gradeText.innerText = '⚙️ DevOps Junior/Mid';
+    feedbackText.innerText = 'Khá tốt! Hãy đọc thêm các tài liệu trong cẩm nang để hiểu sâu hơn các kiến thức thực chiến.';
+  } else {
+    gradeText.innerText = '📚 DevOps Intern/Beginner';
+    feedbackText.innerText = 'Đừng nản chí! Đọc kỹ các bài viết thực hành trong cẩm nang sẽ giúp bạn tiến bộ nhanh chóng.';
+  }
+}
+
+function restartQuiz() {
+  document.getElementById('quizPlayPanel').style.display = 'none';
+  document.getElementById('quizResultPanel').style.display = 'none';
+  document.getElementById('quizStartPanel').style.display = 'block';
+}
+
+// Gọi kết xuất ban đầu khi trang tải xong
+document.addEventListener('DOMContentLoaded', () => {
+  renderGuides(guidesList);
+});
