@@ -138,16 +138,16 @@ const guidesList = [
 const guideContent = {
   'docker-concepts': `
     <div class="guide-card-tag" style="color:#69f0ae;border-color:rgba(105,240,174,0.3);margin-bottom:0.8rem">DOCKER</div>
-    <h2>Docker Căn Bản: Phân biệt Image & Container</h2>
-    <p class="guide-subtitle">Nền tảng của ảo hóa container — Giúp lập trình viên thấu hiểu cơ cấu của Docker.</p>
+    <h2>Docker Căn Bản: Phân biệt Image & Container & Network</h2>
+    <p class="guide-subtitle">Nền tảng của công nghệ ảo hóa container — Phân tích chi tiết UnionFS và Network Drivers.</p>
     
     <div class="thesis-quote">
-      <strong>Định lý Docker:</strong><br>
-      • <strong>Image (Khuôn mẫu):</strong> Là tệp tĩnh (Read-Only), chứa mã nguồn, thư viện, biến môi trường và runtime. Nó được tạo ra từ Dockerfile.<br>
-      • <strong>Container (Thực thể):</strong> Là một tiến trình (process) chạy cô lập trên máy chủ, được sinh ra từ Image. Khi chạy, container tạo thêm một lớp ghi được (Writable Layer) ở trên cùng.
+      <strong>Kiến trúc UnionFS (Union File System):</strong><br>
+      Docker Image được xây dựng từ các lớp (layers) xếp chồng lên nhau. Mỗi layer đại diện cho một lệnh trong Dockerfile. Điểm mấu chốt là tất cả các layer của Image đều ở chế độ <strong>Read-Only</strong>.<br>
+      Khi khởi chạy một Container, Docker sẽ phủ lên trên cùng một lớp ghi được gọi là <strong>Writable Layer (hay Container Layer)</strong>. Mọi thao tác ghi/xóa dữ liệu trong container đều thực hiện trên layer này thông qua cơ chế <strong>Copy-on-Write (CoW)</strong>, đảm bảo Image gốc hoàn toàn không bị sửa đổi.
     </div>
 
-    <div class="guide-section-title">📊 So sánh Trực quan</div>
+    <div class="guide-section-title">📊 So sánh Trực quan: Image vs Container</div>
     <table style="width:100%; border-collapse:collapse; margin-bottom:1.5rem; text-align:left; color:#cbd5e1;">
       <thead>
         <tr style="border-bottom:2px solid rgba(255,255,255,0.1); padding-bottom:10px;">
@@ -159,127 +159,144 @@ const guideContent = {
       <tbody>
         <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
           <td style="padding:10px 0; font-weight:600;">Trạng thái</td>
-          <td style="padding:10px 0;">Tĩnh (Tệp lưu trữ trên đĩa)</td>
-          <td style="padding:10px 0;">Động (Tiến trình đang chạy trong RAM)</td>
+          <td style="padding:10px 0;">Tĩnh (Static files trên đĩa cứng)</td>
+          <td style="padding:10px 0;">Động (Tiến trình bị cô lập trong RAM)</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-          <td style="padding:10px 0; font-weight:600;">Ghi dữ liệu</td>
-          <td style="padding:10px 0;">Chỉ đọc (Read-only)</td>
-          <td style="padding:10px 0;">Ghi/Đọc (Writable layer trên cùng)</td>
+          <td style="padding:10px 0; font-weight:600;">Khả năng ghi</td>
+          <td style="padding:10px 0;">Chỉ đọc (Read-Only)</td>
+          <td style="padding:10px 0;">Đọc & Ghi (Writable Container Layer)</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-          <td style="padding:10px 0; font-weight:600;">Ví dụ lập trình</td>
-          <td style="padding:10px 0;">Class (Lớp)</td>
-          <td style="padding:10px 0;">Object (Thực thể của lớp)</td>
+          <td style="padding:10px 0; font-weight:600;">Vòng đời</td>
+          <td style="padding:10px 0;">Vĩnh viễn (Cho đến khi bị xóa)</td>
+          <td style="padding:10px 0;">Tạm thời (Dễ dàng tạo, hủy, start/stop)</td>
         </tr>
       </tbody>
     </table>
 
-    <div class="guide-section-title">🛠️ Các câu lệnh Docker cốt lõi cần nhớ</div>
-    <div class="step-list">
-      <div class="step-item">
-        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">1</div>
-        <div class="step-body">
-          <p><strong style="color:#e2e8f0">Build image từ Dockerfile:</strong></p>
-          <div class="cmd-block">docker build -t my-app:v1.0 .</div>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">2</div>
-        <div class="step-body">
-          <p><strong style="color:#e2e8f0">Chạy container từ image:</strong></p>
-          <div class="cmd-block">docker run -d -p 3000:3000 --name running-app my-app:v1.0</div>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-num" style="background:rgba(105,240,174,0.15);color:#69f0ae">3</div>
-        <div class="step-body">
-          <p><strong style="color:#e2e8f0">Xem các container đang chạy và quản trị:</strong></p>
-          <div class="cmd-block">docker ps # Liệt kê container đang chạy
-docker logs -f running-app # Xem logs thời gian thực
-docker stop running-app # Dừng container
-docker rm running-app # Xóa container</div>
-        </div>
-      </div>
-    </div>
+    <div class="guide-section-title">🌐 Tìm hiểu các Docker Network Drivers</div>
+    <ul>
+      <li><strong>Bridge (Mặc định):</strong> Tạo ra một mạng nội bộ ảo trên host (thường dải 172.17.0.0/16). Các container kết nối vào bridge có thể liên lạc với nhau qua địa chỉ IP nội bộ. Muốn mở ra ngoài phải dùng port mapping (\`-p\`).</li>
+      <li><strong>Host:</strong> Loại bỏ sự cách ly mạng giữa container và máy host. Container trực tiếp sử dụng interface mạng của host. Ví dụ: Container chạy port 80 thì host sẽ bị chiếm dụng port 80 luôn, không cần map port. Ưu điểm: Hiệu năng mạng cực cao (Zero-overhead).</li>
+      <li><strong>None:</strong> Container hoàn toàn bị ngắt kết nối mạng. Không có card mạng nào được cấu hình ngoài loopback (\`lo\`). Dùng cho các tiến trình tính toán offline cực kỳ bảo mật.</li>
+      <li><strong>Overlay:</strong> Cho phép kết nối nhiều Docker daemon trên các máy chủ vật lý khác nhau lại với nhau thành một mạng overlay chung. Đây là xương sống cho Docker Swarm.</li>
+    </ul>
+
+    <div class="guide-section-title">🛠️ Các câu lệnh quản trị Mạng & Tài nguyên</div>
+    <div class="cmd-block"># Quản lý Mạng Docker
+docker network ls                         # Liệt kê các network hiện có
+docker network create --driver bridge app-net  # Tạo mạng bridge tên 'app-net'
+docker network inspect app-net            # Xem chi tiết cấu hình và container trong mạng
+docker run -d --network app-net --name web nginx  # Chạy container kết nối trực tiếp vào app-net
+
+# Quản lý Volume (Lưu trữ bền vững)
+docker volume create pg-data              # Tạo một volume lưu database
+docker volume ls                          # Xem danh sách volume
+docker run -d -v pg-data:/var/lib/postgresql/data postgres:16 # Gắn volume vào container</div>
   `,
 
   'docker-watchtower': `
     <div class="guide-card-tag" style="color:#52cbff;border-color:rgba(82,203,255,0.3);margin-bottom:0.8rem">DOCKER</div>
     <h2>Tự động cập nhật Container với Watchtower</h2>
-    <p class="guide-subtitle">Giải pháp CD tinh gọn cho môi trường VPS độc lập — Tự động cập nhật container khi có image mới.</p>
+    <p class="guide-subtitle">Xây dựng quy trình Continuous Deployment (CD) tinh gọn cho máy chủ VPS đơn lẻ.</p>
     
     <div class="thesis-quote">
-      <strong>Watchtower là gì?</strong><br>
-      Là một dịch vụ đóng gói trong Docker, có nhiệm vụ giám sát các container đang chạy trên host. Khi phát hiện một image mới đã được đẩy lên Docker Hub hoặc Registry cá nhân, Watchtower sẽ tự động dừng container cũ, pull image mới về và khởi chạy container mới với chính xác các tham số ban đầu.
+      <strong>Cơ chế hoạt động của Watchtower:</strong><br>
+      Watchtower chạy dưới dạng một tiến trình daemon (container). Định kỳ, nó sẽ gửi API query lên Container Registry (Docker Hub, GHCR...) để kiểm tra digest (mã băm) của tag image đang chạy. Nếu phát hiện sự thay đổi, Watchtower sẽ gửi tín hiệu stop (SIGTERM), gỡ bỏ container cũ, pull image mới nhất và khởi tạo container mới bằng đúng các cấu hình env, network, mount volumes gốc.
     </div>
 
-    <div class="guide-section-title">⚙️ Cách hoạt động & Sử dụng</div>
-    <p>Cách đơn giản nhất là chạy Watchtower dưới dạng một Docker Container. Dưới đây là cấu hình chuẩn bằng <strong>docker-compose.yml</strong> để chạy Watchtower giám sát và tự động dọn dẹp các image cũ:</p>
+    <div class="guide-section-title">⚙️ Tích hợp Đăng nhập Registry Bảo mật (Auth)</div>
+    <p>Nếu ứng dụng của bạn nằm trong Private Repository (Docker Hub hoặc GitHub Container Registry), Watchtower cần thông tin xác thực để pull. Bạn có thể truyền file credentials hoặc truyền qua biến môi trường:</p>
     
-    <div class="cmd-block">version: '3.8'
+    <div class="cmd-block"># Cách 1: Gắn file config.json của Docker local vào Watchtower
+docker run -d \\
+  --name watchtower \\
+  -v /var/run/docker.sock:/var/run/docker.sock \\
+  -v ~/.docker/config.json:/config.json:ro \\
+  containrrr/watchtower --cleanup --interval 300
 
+# Cách 2: Sử dụng biến môi trường (Ví dụ trong Docker Compose)
+version: '3.8'
 services:
-  web-app:
-    image: daihoangnguyen17101994/homenest-backend:latest
-    ports:
-      - "5000:5000"
-    restart: always
-
   watchtower:
     image: containrrr/watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: --cleanup --interval 300
+    environment:
+      - REPO_USER=my_docker_username
+      - REPO_PASS=dckr_pat_personal_token_here
+    command: --cleanup --interval 1800 # Quét mỗi 30 phút
     restart: always</div>
 
-    <div class="guide-section-title">🔥 Các tham số cấu hình nâng cao của Watchtower</div>
-    <ul>
-      <li><strong>--cleanup (-c):</strong> Sau khi container khởi động lại với image mới, xóa sạch image cũ. Đây là cờ <strong>BẮT BUỘC</strong> phải bật để tránh làm đầy ổ cứng VPS.</li>
-      <li><strong>--interval (-i) [seconds]:</strong> Tần suất kiểm tra cập nhật. Ví dụ: \`--interval 86400\` để quét mỗi ngày một lần.</li>
-      <li><strong>--label-enable:</strong> Chỉ cập nhật các container có chứa nhãn \`com.centurylinklabs.watchtower.enable=true\`. Giúp bạn chủ động chọn container nào được cập nhật tự động.</li>
-    </ul>
+    <div class="guide-section-title">🔔 Thiết lập Thông Báo Tự Động (Slack/Discord/Telegram)</div>
+    <p>Watchtower hỗ trợ gửi thông báo chi tiết khi hoàn thành cập nhật container. Dưới đây là cách cấu hình gửi thông báo qua <strong>Discord Webhook</strong>:</p>
+    
+    <div class="cmd-block">environment:
+  - WATCHTOWER_NOTIFICATIONS=shoutrrr
+  - WATCHTOWER_NOTIFICATION_URL=discord://webhook_token_id@webhook_token_hash
+  - WATCHTOWER_NOTIFICATIONS_LEVEL=info # Các mức: panic, fatal, error, warn, info, debug</div>
+    <p>Hoặc gửi qua <strong>Telegram Bot</strong>:</p>
+    <div class="cmd-block">environment:
+  - WATCHTOWER_NOTIFICATIONS=shoutrrr
+  - WATCHTOWER_NOTIFICATION_URL=telegram://bot_token_here@telegram_chat_id_here</div>
   `,
 
   'docker-opt': `
     <div class="guide-card-tag" style="color:#bb86fc;border-color:rgba(187,134,252,0.3);margin-bottom:0.8rem">DOCKER</div>
-    <h2>Tối ưu hóa Dockerfile cho môi trường Production</h2>
-    <p class="guide-subtitle">Hướng dẫn viết Dockerfile chuẩn Senior: Nhẹ nhất, nhanh nhất và an toàn nhất.</p>
+    <h2>Tối ưu hóa Dockerfile & Bảo mật Container chuẩn Production</h2>
+    <p class="guide-subtitle">Các kỹ thuật nâng cao để giảm 80% kích thước image và chặn đứng các lỗ hổng bảo mật leo thang đặc quyền.</p>
 
-    <div class="guide-section-title">🐳 Nguyên tắc 1: Multi-stage Builds</div>
-    <p>Multi-stage giúp tách biệt môi trường build (chứa compiler, SDK nặng) khỏi môi trường chạy thực tế (chỉ chứa file nhị phân đã build và thư viện tối thiểu).</p>
+    <div class="guide-section-title">🔒 Kỹ thuật bảo mật 1: Chạy dưới quyền Non-Root User</div>
+    <p>Mặc định, các tiến trình trong container chạy bằng quyền root. Nếu hacker chiếm quyền kiểm soát app, chúng có thể phá hoại cả máy chủ vật lý. Hãy chuyển sang quyền user hạn chế:</p>
     
-    <div class="cmd-block"># --- Stage 1: Build ---
-FROM node:22-alpine AS builder
+    <div class="cmd-block">FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
 
-# --- Stage 2: Runtime ---
 FROM node:22-alpine AS runner
 WORKDIR /app
-ENV NODE_ENV=production
-COPY package*.json ./
+# Đảm bảo thư mục app thuộc sở hữu của user node (đã có sẵn trong alpine image)
+COPY --chown=node:node package*.json ./
 RUN npm ci --only=production
-COPY --from=builder /app/dist ./dist
+COPY --chown=node:node --from=builder /app/dist ./dist
+
+# Thay đổi user thực thi tiến trình
 USER node
 EXPOSE 3000
 CMD ["node", "dist/main.js"]</div>
+
+    <div class="guide-section-title">⚡ Kỹ thuật tối ưu 2: Tận dụng cơ chế Caching Layers</div>
+    <p>Mỗi câu lệnh trong Dockerfile tạo ra một layer mới. Nếu file nguồn thay đổi, tất cả các layer phía sau nó sẽ bị mất cache. Vì vậy, ta luôn copy các file dependency trước rồi cài đặt chúng trước khi copy toàn bộ mã nguồn:</p>
+    
+    <div class="cmd-block"># SAI LẦM: Làm mất cache package.json khi đổi bất kỳ dòng code nào
+COPY . .
+RUN npm install
+
+# CHUẨN SENIOR: Tận dụng tối đa cache layer
+COPY package*.json ./
+RUN npm ci
+COPY . .</div>
+
+    <div class="guide-section-title">🛡️ Quét lỗ hổng Image với Trivy</div>
+    <p>Trong quy trình DevSecOps, trước khi push image lên Registry, ta cần chạy scan để tìm các thư viện lỗi thời, độc hại:</p>
+    <div class="cmd-block"># Cài đặt và quét image
+trivy image --severity HIGH,CRITICAL node-app:latest</div>
   `,
 
   'cicd-github': `
     <div class="guide-card-tag" style="color:#82b1ff;border-color:rgba(130,177,255,0.3);margin-bottom:0.8rem">CI/CD Pipeline</div>
     <h2>CI/CD Pipeline với GitHub Actions + Docker + VPS</h2>
-    <p class="guide-subtitle">Kiến trúc chuẩn: Build độc lập trên runner của GitHub Actions, deploy lên VPS qua SSH SSH key bảo mật.</p>
+    <p class="guide-subtitle">Kiến trúc CI/CD chuẩn: Build tự động trên runner của GitHub Actions, đẩy lên Docker Hub và SSH deploy lên VPS.</p>
     
     <div class="thesis-quote">
-      <strong>Quy trình hoạt động:</strong><br>
-      Code push lên GitHub → GitHub Actions trigger → Build Docker image → Push lên Docker Hub (Private) → Kết nối SSH vào VPS → Ra lệnh cho Docker Compose kéo image mới và up đè.
+      <strong>Nguyên lý bảo mật:</strong> Không lưu thông tin VPS trong mã nguồn công khai. Sử dụng <strong>GitHub Secrets</strong> để mã hóa các thông tin nhạy cảm: IP máy chủ, Token Docker Hub, SSH Private Key để kết nối an toàn.
     </div>
 
-    <div class="guide-section-title">📝 Cấu hình Workflow (.github/workflows/deploy.yml)</div>
+    <div class="guide-section-title">📝 Cấu hình Pipeline (.github/workflows/deploy.yml)</div>
     <div class="cmd-block">name: Production Deploy
 
 on:
@@ -326,7 +343,7 @@ jobs:
   'cicd-gitlab': `
     <div class="guide-card-tag" style="color:#ff8a80;border-color:rgba(255,138,128,0.3);margin-bottom:0.8rem">CI/CD Pipeline</div>
     <h2>CI/CD với GitLab CI/CD & Self-Hosted Runner</h2>
-    <p class="guide-subtitle">Cấu hình GitLab pipeline tối ưu chạy trên VPS riêng bằng Docker Executor.</p>
+    <p class="guide-subtitle">Cài đặt GitLab runner trên hạ tầng cá nhân để tiết kiệm chi phí và tăng tốc build với Docker-in-Docker (dind).</p>
     
     <div class="guide-section-title">⚙️ Cấu hình .gitlab-ci.yml</div>
     <div class="cmd-block">stages:
@@ -369,68 +386,395 @@ deploy_job:
   'git-ssh': `
     <div class="guide-card-tag" style="color:#ffb74d;border-color:rgba(255,183,77,0.3);margin-bottom:0.8rem">GIT</div>
     <h2>Cấu hình SSH Keys cho Nhiều Tài khoản GitHub & GitLab</h2>
-    <p class="guide-subtitle">Giải quyết triệt để lỗi xung đột phân quyền SSH khi dùng nhiều tài khoản GitHub/GitLab trên cùng một máy.</p>
+    <p class="guide-subtitle">Cấu hình SSH client tinh tế giúp chuyển mạch tài khoản Git mượt mà.</p>
 
-    <div class="guide-section-title">🔑 Bước 1: Tạo các SSH Key riêng biệt</div>
-    <div class="cmd-block"># Tạo key cho tài khoản công việc (Work)
+    <div class="guide-section-title">🔑 Bước 1: Tạo các cặp khóa riêng biệt</div>
+    <div class="cmd-block"># Khóa cho công việc công ty
 ssh-keygen -t ed25519 -C "work@company.com" -f ~/.ssh/id_ed25519_work
 
-# Tạo key cho tài khoản cá nhân (Personal)
+# Khóa cho các dự án cá nhân
 ssh-keygen -t ed25519 -C "personal@email.com" -f ~/.ssh/id_ed25519_personal</div>
 
-    <div class="guide-section-title">🚀 Bước 3: Cấu hình SSH config file</div>
-    <div class="cmd-block">Host github.com-work
+    <div class="guide-section-title">🚀 Bước 2: Thiết lập file ~/.ssh/config</div>
+    <div class="cmd-block"># Tài khoản Công việc (Work GitHub)
+Host github.com-work
   HostName github.com
   User git
   IdentityFile ~/.ssh/id_ed25519_work
 
+# Tài khoản Cá nhân (Personal GitHub)
 Host github.com-personal
   HostName github.com
   User git
   IdentityFile ~/.ssh/id_ed25519_personal</div>
+
+    <div class="guide-section-title">⚙️ Bước 3: Áp dụng khi Clone hoặc cấu hình Remote URL</div>
+    <p>Thay vì clone URL mặc định, hãy thay đổi host tương ứng trong config:</p>
+    <div class="cmd-block"># Thay đổi từ: git@github.com:user/repo.git
+# Thành:
+git clone git@github.com-personal:user/repo.git</div>
   `,
 
   'k8s-core': `
     <div class="guide-card-tag" style="color:#64b5f6;border-color:rgba(100,181,246,0.3);margin-bottom:0.8rem">KUBERNETES</div>
-    <h2>Kubernetes (K8s) Cơ Bản: Pods, Deployments & Services</h2>
-    <p class="guide-subtitle">Kiến trúc lõi điều phối container tự động cho hệ thống lớn.</p>
+    <h2>Kubernetes (K8s) Cơ Bản: Control Plane & Worker Nodes</h2>
+    <p class="guide-subtitle">Hiểu rõ kiến trúc điều phối container tự động cho hệ thống phân tán (Distributed System).</p>
 
-    <div class="guide-section-title">☸️ Phân tích các khái niệm chính</div>
+    <div class="guide-section-title">☸️ Phân tích Kiến trúc K8s Cluster</div>
     <ul>
-      <li><strong>Pod:</strong> Đơn vị nhỏ nhất có thể deploy được trong K8s.</li>
-      <li><strong>Deployment:</strong> Trình quản lý bản sao và tự phục hồi (Self-healing).</li>
-      <li><strong>Service:</strong> Đầu mối cân bằng tải và định tuyến nội bộ ổn định.</li>
+      <li><strong>Control Plane (Master Node):</strong> Đầu não quản lý trạng thái mong muốn (desired state) của hệ thống.
+        <ul>
+          <li><strong>kube-apiserver:</strong> Điểm tiếp nhận mọi truy vấn cấu hình (REST API).</li>
+          <li><strong>etcd:</strong> Cơ sở dữ liệu dạng Key-Value phân tán lưu trữ toàn bộ cấu hình cluster.</li>
+          <li><strong>kube-scheduler:</strong> Phân phối pods vào các worker nodes dựa trên tài nguyên trống.</li>
+          <li><strong>kube-controller-manager:</strong> Quản lý các vòng lặp kiểm soát (Replication Controller, Node Controller).</li>
+        </ul>
+      </li>
+      <li><strong>Worker Node:</strong> Nơi trực tiếp chạy các container ứng dụng.
+        <ul>
+          <li><strong>kubelet:</strong> Agent giám sát trạng thái của Container và Pod trên node.</li>
+          <li><strong>kube-proxy:</strong> Quản lý luật mạng để định tuyến lưu lượng (iptables/IPVS).</li>
+          <li><strong>Container Runtime (CRI):</strong> Engine chạy container thực sự (containerd, CRI-O).</li>
+        </ul>
+      </li>
     </ul>
+
+    <div class="guide-section-title">📝 Ví dụ YAML Deployment + Service hoàn chỉnh</div>
+    <div class="cmd-block">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-web-app
+  labels:
+    app: web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+      - name: nginx-server
+        image: nginx:1.25-alpine
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-web-service
+spec:
+  selector:
+    app: web
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP</div>
   `,
 
   'k8s-config': `
     <div class="guide-card-tag" style="color:#4dd0e1;border-color:rgba(77,208,225,0.3);margin-bottom:0.8rem">KUBERNETES</div>
     <h2>Quản lý Cấu hình K8s: ConfigMap, Secret & Ingress</h2>
-    <p class="guide-subtitle">Làm việc với dữ liệu cấu hình nhạy cảm và mở ứng dụng ra thế giới bên ngoài.</p>
+    <p class="guide-subtitle">Làm chủ việc phân phối cấu hình động, thông tin mật và thiết lập định tuyến Ingress traffic.</p>
+
+    <div class="guide-section-title">📝 Khái niệm nền tảng</div>
+    <ul>
+      <li><strong>ConfigMap:</strong> Dùng để lưu trữ các thông tin cấu hình không nhạy cảm dưới dạng key-value. Ứng dụng đọc qua biến môi trường hoặc volume mount.</li>
+      <li><strong>Secret:</strong> Tương tự như ConfigMap nhưng dùng để lưu mật khẩu, API key, chứng chỉ SSL. Dữ liệu trong Secret mặc định được encode dạng Base64 (lưu ý: Base64 chỉ là encode, chưa phải mã hóa bảo mật).</li>
+      <li><strong>Ingress:</strong> Quy định các luật định tuyến HTTP/HTTPS từ ngoài internet vào các Service bên trong Cluster. Hoạt động như một Reverse Proxy cấp Cluster.</li>
+    </ul>
+
+    <div class="guide-section-title">📂 Thực hành YAML Manifest: ConfigMap, Secret và Ingress</div>
+    <div class="cmd-block">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secret
+type: Opaque
+data:
+  # Giá trị 'my-super-secret-password' đã mã hóa Base64
+  DB_PASSWORD: bXktc3VwZXItc2VjcmV0LXBhc3N3b3Jk
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - app.my-domain.com
+    secretName: app-tls-secret
+  rules:
+  - host: app.my-domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-web-service
+            port:
+              number: 80</div>
   `,
 
   'k8s-helm': `
     <div class="guide-card-tag" style="color:#9575cd;border-color:rgba(149,117,205,0.3);margin-bottom:0.8rem">KUBERNETES</div>
     <h2>Đóng gói Ứng dụng Kubernetes với Helm Chart</h2>
-    <p class="guide-subtitle">Quản lý manifest K8s dưới dạng package. Viết template và triển khai ứng dụng bằng Helm.</p>
+    <p class="guide-subtitle">Tiêu chuẩn hóa quy trình deploy microservices trên K8s bằng template engine.</p>
+
+    <div class="guide-section-title">📂 Cấu trúc thư mục của một Helm Chart</div>
+    <div class="cmd-block">my-chart/
+  Chart.yaml          # File metadata chứa phiên bản chart và thông tin app
+  values.yaml         # Chứa toàn bộ các biến cấu hình mặc định
+  charts/             # Thư mục chứa các sub-charts phụ thuộc
+  templates/          # Các tệp định nghĩa tài nguyên được viết bằng template Go
+    deployment.yaml
+    service.yaml
+    ingress.yaml
+    _helpers.tpl      # Khai báo các khối template tái sử dụng</div>
+
+    <div class="guide-section-title">⚙️ Template hóa manifest (Ví dụ templates/deployment.yaml)</div>
+    <div class="cmd-block">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "my-chart.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "my-chart.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "my-chart.name" . }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}</div>
+
+    <div class="guide-section-title">🛠️ Các câu lệnh làm việc với Helm</div>
+    <div class="cmd-block"># Tạo mới một Chart
+helm create my-app-chart
+
+# Kiểm tra cú pháp lỗi trong chart
+helm lint ./my-app-chart
+
+# Chạy thử nghiệm giả lập (Dry Run) để xem kết quả gen manifest
+helm install my-release ./my-app-chart --dry-run --debug
+
+# Install chart lên cluster thực tế
+helm install my-app-prod ./my-app-chart -f production-values.yaml
+
+# Rollback phiên bản nếu xảy ra lỗi
+helm rollback my-app-prod 1 # Quay về revision số 1</div>
   `,
 
   'aapanel-proxy': `
     <div class="guide-card-tag" style="color:#81c784;border-color:rgba(129,199,132,0.3);margin-bottom:0.8rem">VPS & AAPANEL</div>
     <h2>aaPanel: Nginx Reverse Proxy Docker & Let\'s Encrypt</h2>
-    <p class="guide-subtitle">Hướng dẫn từng bước cấu hình Nginx làm proxy ngược để expose ứng dụng Docker an toàn.</p>
+    <p class="guide-subtitle">Hướng dẫn trỏ tên miền công cộng về container Docker chạy trên VPS sử dụng giao diện quản trị aaPanel.</p>
+
+    <div class="guide-section-title">🌐 Quy trình thiết lập Reverse Proxy từng bước</div>
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(129,199,132,0.15);color:#81c784">1</div>
+        <div class="step-body">
+          <p><strong style="color:#e2e8f0">Khởi chạy container app của bạn trên một port cụ thể:</strong></p>
+          <div class="cmd-block">docker run -d --name node-app -p 8080:3000 my-image:latest</div>
+          <p>Ở đây ta đã map port vật lý 8080 của VPS vào port 3000 của container.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(129,199,132,0.15);color:#81c784">2</div>
+        <div class="step-body">
+          <p><strong style="color:#e2e8f0">Tạo Website trên aaPanel:</strong></p>
+          <p>Truy cập aaPanel -> Chọn mục <strong>Website</strong> -> Click <strong>Add site</strong>. Nhập domain mong muốn (ví dụ: \`app.domain.com\`). Ở phần Database chọn None và PHP version chọn Static.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(129,199,132,0.15);color:#81c784">3</div>
+        <div class="step-body">
+          <p><strong style="color:#e2e8f0">Cấu hình SSL Let's Encrypt:</strong></p>
+          <p>Tại danh sách website, click vào tên site vừa tạo -> Chọn mục <strong>SSL</strong> -> Chọn tab <strong>Let's Encrypt</strong>. Tích chọn tên miền của bạn và click <strong>Apply</strong>. aaPanel sẽ tự động đăng ký và sinh SSL cron job tự động gia hạn định kỳ.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(129,199,132,0.15);color:#81c784">4</div>
+        <div class="step-body">
+          <p><strong style="color:#e2e8f0">Thiết lập Reverse Proxy:</strong></p>
+          <p>Vẫn trong bảng cấu hình site -> Chọn mục <strong>Reverse Proxy</strong> -> Click <strong>Add reverse proxy</strong>.
+          <br>• Proxy Name: Nhập tùy ý (ví dụ: \`docker-app\`)
+          <br>• Target URL: Nhập \`http://127.0.0.1:8080\`
+          <br>Click <strong>Save</strong> để hoàn tất.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="guide-section-title">⚙️ Cấu hình Nginx nâng cao cho WebSockets</div>
+    <p>Nếu ứng dụng của bạn sử dụng Socket.io hoặc WebSocket (như các app React, Chat app), cấu hình proxy mặc định sẽ bị lỗi. Click nút <strong>Conf</strong> tại dòng proxy vừa tạo và chèn đoạn code sau:</p>
+    <div class="cmd-block">location / {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    
+    # Kích hoạt WebSocket support
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade \$http_upgrade;
+    proxy_set_header Connection "upgrade";
+    
+    # Cấu hình timeouts
+    proxy_read_timeout 86400;
+}</div>
   `,
 
   'aws-vpc': `
     <div class="guide-card-tag" style="color:#e0e0e0;border-color:rgba(224,224,224,0.3);margin-bottom:0.8rem">AWS CLOUD</div>
     <h2>Kiến trúc mạng AWS VPC 3-Tier chuẩn Production</h2>
-    <p class="guide-subtitle">Thiết kế hạ tầng mạng đám mây cô lập, bảo mật và chịu lỗi cao trên AWS.</p>
+    <p class="guide-subtitle">Thiết kế hạ tầng mạng đám mây cô lập, độ khả dụng cao (Multi-AZ) và bảo mật tối đa.</p>
+
+    <div class="guide-section-title">☁️ Phân tích kiến trúc 3 Tầng Subnet</div>
+    <ul>
+      <li><strong>Tầng 1: Public Subnets (Dành cho Inbound/Outbound Public Traffic):</strong>
+        <ul>
+          <li>Chứa Application Load Balancer (ALB), NAT Gateway, Bastion Host.</li>
+          <li>Bảng định tuyến (Route Table) trỏ dòng traffic \`0.0.0.0/0\` trực tiếp qua Internet Gateway (IGW).</li>
+        </ul>
+      </li>
+      <li><strong>Tầng 2: Private Subnets (Dành cho Business Logic App):</strong>
+        <ul>
+          <li>Chứa EC2 App Servers, ECS cluster, EKS Worker Nodes.</li>
+          <li>Không thể truy cập trực tiếp từ Internet. Muốn giao tiếp ra ngoài (ví dụ tải thư viện) phải đi qua NAT Gateway nằm bên Public Subnet.</li>
+        </ul>
+      </li>
+      <li><strong>Tầng 3: Isolated Subnets (Dành cho Database & Caching):</strong>
+        <ul>
+          <li>Chứa Database (RDS PostgreSQL/MySQL), ElastiCache Redis.</li>
+          <li>Hoàn toàn cô lập: Không có route nào trỏ tới internet hay NAT Gateway. Chỉ nhận kết nối nội bộ từ các Security Group của Tầng 2.</li>
+        </ul>
+      </li>
+    </ul>
+
+    <div class="guide-section-title">🔒 Cấu hình Security Group chuẩn</div>
+    <table style="width:100%; border-collapse:collapse; margin-bottom:1.5rem; text-align:left; color:#cbd5e1;">
+      <thead>
+        <tr style="border-bottom:2px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+          <th style="padding:10px 0;">Security Group</th>
+          <th style="padding:10px 0;">Inbound Rules</th>
+          <th style="padding:10px 0;">Outbound Rules</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-weight:600;">SG-ALB</td>
+          <td style="padding:10px 0;">Cho phép HTTP (80) & HTTPS (443) từ \`0.0.0.0/0\`</td>
+          <td style="padding:10px 0;">Cho phép chuyển tiếp tới SG-APP</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-weight:600;">SG-APP</td>
+          <td style="padding:10px 0;">Chỉ cho phép port ứng dụng (VD: 3000) từ nguồn SG-ALB</td>
+          <td style="padding:10px 0;">Cho phép truy cập Database (SG-DB) và NAT Gateway</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-weight:600;">SG-DB</td>
+          <td style="padding:10px 0;">Chỉ cho phép port DB (VD: 5432) từ nguồn duy nhất là SG-APP</td>
+          <td style="padding:10px 0;">Block toàn bộ Outbound</td>
+        </tr>
+      </tbody>
+    </table>
   `,
 
   'aws-compute': `
     <div class="guide-card-tag" style="color:#f06292;border-color:rgba(240,98,146,0.3);margin-bottom:0.8rem">AWS CLOUD</div>
     <h2>Deploy Ứng dụng với AWS EC2, S3 & CloudFront CDN</h2>
-    <p class="guide-subtitle">Kết hợp máy chủ ảo EC2 với kho lưu trữ tĩnh S3 và mạng lưới phân phối CDN CloudFront.</p>
+    <p class="guide-subtitle">Xây dựng giải pháp lưu trữ tĩnh an toàn và phân phối nội dung tốc độ cao trên toàn cầu.</p>
+
+    <div class="guide-section-title">⚡ Hướng dẫn deploy ứng dụng Auto-Scaling</div>
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(240,98,146,0.15);color:#f06292">1</div>
+        <div class="step-body">
+          <p><strong style="color:#e2e8f0">Thiết lập EC2 Target Group:</strong></p>
+          <p>Tạo Target Group chứa các EC2 instance. Cấu hình Health Check để định kỳ gửi HTTP request kiểm tra tính sẵn sàng của ứng dụng.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(240,98,146,0.15);color:#f06292">2</div>
+        <div class="step-body">
+          <p><strong style="color:#e2e8f0">Khởi tạo Application Load Balancer (ALB):</strong></p>
+          <p>Đặt ALB ở Public Subnet để nhận request từ người dùng, gắn chứng chỉ SSL từ ACM (AWS Certificate Manager), giải mã SSL và định tuyến traffic HTTP đã giải mã vào Target Group.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(240,98,146,0.15);color:#f06292">3</div>
+        <div class="step-body">
+          <p><strong style="color:#e2e8f0">Cấu hình Auto Scaling Group (ASG):</strong></p>
+          <p>Liên kết ASG với Target Group. Thiết lập chính sách Scaling Policy: Khi CPU trung bình của cụm EC2 > 70%, ASG sẽ tự động spawn thêm EC2 instance mới dựa trên Launch Template có sẵn để chịu tải.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="guide-section-title">📦 Lưu trữ Tĩnh với S3 & Phân phối qua CloudFront CDN</div>
+    <p>Đối với các tệp tĩnh như hình ảnh, CSS, JavaScript, Media, ta không nên lưu trực tiếp trên EC2 vì sẽ tốn ổ cứng và tốn băng thông xử lý. Giải pháp tối ưu là đưa lên S3 và phân phối bằng CloudFront CDN:</p>
+    
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(240,98,146,0.15);color:#f06292">A</div>
+        <div class="step-body">
+          <p><strong style="color:#e2e8f0">Tạo S3 Bucket:</strong></p>
+          <p>Tạo bucket lưu trữ và bật tính năng Block all public access để bảo mật tuyệt đối các file lưu trữ bên trong.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(240,98,146,0.15);color:#f06292">B</div>
+        <div class="step-body">
+          <p><strong style="color:#e2e8f0">Cấu hình CloudFront Distribution:</strong></p>
+          <p>Tạo CloudFront Distribution với Origin trỏ về S3 Bucket vừa tạo. Kích hoạt tính năng **Origin Access Control (OAC)** để CloudFront có thể đọc được file trong S3 private bucket.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:rgba(240,98,146,0.15);color:#f06292">C</div>
+        <div class="step-body">
+          <p><strong style="color:#e2e8f0">Cập nhật S3 Bucket Policy:</strong></p>
+          <p>Sử dụng Bucket Policy được sinh ra từ CloudFront để cho phép chỉ định riêng CloudFront Service Principal được quyền **s3:GetObject** đối với bucket này:</p>
+          <div class="cmd-block">{
+  "Version": "2012-10-17",
+  "Statement": {
+    "Sid": "AllowCloudFrontServicePrincipalReadOnly",
+    "Effect": "Allow",
+    "Principal": {
+      "Service": "cloudfront.amazonaws.com"
+    },
+    "Action": "s3:GetObject",
+    "Resource": "arn:aws:s3:::my-bucket-name/*",
+    "Condition": {
+      "StringEquals": {
+        "AWS:SourceArn": "arn:aws:cloudfront::123456789012:distribution/EDFDVBD632S1"
+      }
+    }
+  }
+}</div>
+        </div>
+      </div>
+    </div>
   `
 };
 
