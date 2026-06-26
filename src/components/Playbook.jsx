@@ -293,118 +293,188 @@ volumes:
   `,
 
   'docker-watchtower': `
-    <div class="guide-card-tag" style="color:#52cbff;border-color:rgba(82,203,255,0.3);margin-bottom:0.8rem">DOCKER</div>
-    <h2>Tự động cập nhật Container với Watchtower</h2>
-    <p class="guide-subtitle">Xây dựng quy trình Continuous Deployment (CD) tinh gọn cho máy chủ VPS đơn lẻ.</p>
+    <div class="guide-card-tag" style="color:#52cbff;border-color:rgba(82,203,255,0.3);margin-bottom:0.8rem">CD PIPELINE</div>
+    <h2>CD Tự Động Với Watchtower: Cấu Hình Nâng Cao</h2>
+    <p class="guide-subtitle">Triển khai hệ thống Continuous Deployment tự động cập nhật container cho Private Registry và tích hợp Webhook.</p>
     
     <div class="thesis-quote">
-      <strong>Cơ chế hoạt động của Watchtower:</strong><br>
-      Watchtower chạy dưới dạng một tiến trình daemon (container). Định kỳ, nó sẽ gửi API query lên Container Registry (Docker Hub, GHCR...) để kiểm tra digest (mã băm) của tag image đang chạy. Nếu phát hiện sự thay đổi, Watchtower sẽ gửi tín hiệu stop (SIGTERM), gỡ bỏ container cũ, pull image mới nhất và khởi tạo container mới bằng đúng các cấu hình env, network, mount volumes gốc.
+      <strong>Động lực học Watchtower:</strong><br>
+      Trong mô hình vận hành VPS độc lập, việc tích hợp các hệ thống CI/CD cồng kềnh như Jenkins hay Kubernetes là quá tải. Watchtower giải quyết bài toán này bằng cách tự động hóa hoàn toàn pha Pull Image & Restart Container. Nó hoạt động như một tiến trình nền giám sát Docker Socket.
     </div>
 
-    <div class="guide-section-title">⚙️ Tích hợp Đăng nhập Registry Bảo mật (Auth)</div>
-    <p>Nếu ứng dụng của bạn nằm trong Private Repository (Docker Hub hoặc GitHub Container Registry), Watchtower cần thông tin xác thực để pull. Bạn có thể truyền file credentials hoặc truyền qua biến môi trường:</p>
+    <div class="guide-section-title">🔒 Đăng nhập Private Registry (Docker Hub & GHCR)</div>
+    <p>Khi bạn deploy các image private từ Docker Hub hoặc GitHub Container Registry (\`ghcr.io\`), Watchtower cần được cấp quyền đọc. Hãy làm theo hướng dẫn sau:</p>
     
-    <div class="cmd-block"># Cách 1: Gắn file config.json của Docker local vào Watchtower
+    <div class="cmd-block"># Tạo file cấu hình auth tại máy host (ví dụ chạy lệnh docker login trước)
+docker login ghcr.io
+
+# File cấu hình credentials sẽ nằm tại: ~/.docker/config.json
+# Mount file này vào container Watchtower ở chế độ chỉ đọc (:ro)
 docker run -d \\
   --name watchtower \\
   -v /var/run/docker.sock:/var/run/docker.sock \\
   -v ~/.docker/config.json:/config.json:ro \\
-  containrrr/watchtower --cleanup --interval 300
+  containrrr/watchtower --cleanup --interval 300</div>
 
-# Cách 2: Sử dụng biến môi trường (Ví dụ trong Docker Compose)
-version: '3.8'
+    <div class="guide-section-title">🔔 Tích hợp Thông Báo Webhook (Discord / Telegram)</div>
+    <p>Để nhận báo cáo trạng thái nâng cấp container (Thành công/Thất bại, Tên Image, Phiên bản) trực tiếp về kênh chat của nhóm, hãy sử dụng thư viện thông báo **Shoutrrr** tích hợp sẵn trong Watchtower:</p>
+    
+    <table style="width:100%; border-collapse:collapse; margin-bottom:1.5rem; text-align:left; color:#cbd5e1;">
+      <thead>
+        <tr style="border-bottom:2px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+          <th style="padding:10px 0; color:#52cbff;">Nền tảng</th>
+          <th style="padding:10px 0;">Cấu hình URL Biến môi trường</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-weight:600;">Discord</td>
+          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">discord://token_id@token_token</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-weight:600;">Telegram</td>
+          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">telegram://bot_token@telegram_chat_id</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-weight:600;">Slack</td>
+          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">slack://token-a/token-b/token-c</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="guide-section-title">🐋 Cấu hình Docker Compose chuẩn Production (Tránh Update Database)</div>
+    <p>Một điểm cực kỳ quan trọng: **Không bao giờ cho phép Watchtower tự động cập nhật các container Cơ sở dữ liệu (Postgres, MySQL)** vì có thể gây lỗi hỏng cấu trúc dữ liệu (Data corruption). Chúng ta sẽ dán nhãn loại trừ:</p>
+    
+    <div class="cmd-block">version: '3.8'
+
 services:
+  web-app:
+    image: ghcr.io/my-username/my-app:latest
+    ports:
+      - "3000:3000"
+    labels:
+      # Bật cập nhật cho web app
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: always
+
+  database:
+    image: postgres:16-alpine
+    labels:
+      # KHÔNG cho phép Watchtower động chạm vào database
+      - "com.centurylinklabs.watchtower.enable=false"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    restart: always
+
   watchtower:
     image: containrrr/watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.docker/config.json:/config.json:ro
     environment:
-      - REPO_USER=my_docker_username
-      - REPO_PASS=dckr_pat_personal_token_here
-    command: --cleanup --interval 1800 # Quét mỗi 30 phút
-    restart: always</div>
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_LABEL_ENABLE=true # Chỉ quét container có label enable=true
+      - WATCHTOWER_NOTIFICATIONS=shoutrrr
+      - WATCHTOWER_NOTIFICATION_URL=discord://123456@abcdef
+    command: --interval 3600
+    restart: always
 
-    <div class="guide-section-title">🔔 Thiết lập Thông Báo Tự Động (Slack/Discord/Telegram)</div>
-    <p>Watchtower hỗ trợ gửi thông báo chi tiết khi hoàn thành cập nhật container. Dưới đây là cách cấu hình gửi thông báo qua <strong>Discord Webhook</strong>:</p>
-    
-    <div class="cmd-block">environment:
-  - WATCHTOWER_NOTIFICATIONS=shoutrrr
-  - WATCHTOWER_NOTIFICATION_URL=discord://webhook_token_id@webhook_token_hash
-  - WATCHTOWER_NOTIFICATIONS_LEVEL=info # Các mức: panic, fatal, error, warn, info, debug</div>
-    <p>Hoặc gửi qua <strong>Telegram Bot</strong>:</p>
-    <div class="cmd-block">environment:
-  - WATCHTOWER_NOTIFICATIONS=shoutrrr
-  - WATCHTOWER_NOTIFICATION_URL=telegram://bot_token_here@telegram_chat_id_here</div>
+volumes:
+  pg-data:</div>
   `,
 
   'docker-opt': `
-    <div class="guide-card-tag" style="color:#bb86fc;border-color:rgba(187,134,252,0.3);margin-bottom:0.8rem">DOCKER</div>
-    <h2>Tối ưu hóa Dockerfile & Bảo mật Container chuẩn Production</h2>
-    <p class="guide-subtitle">Các kỹ thuật nâng cao để giảm 80% kích thước image và chặn đứng các lỗ hổng bảo mật leo thang đặc quyền.</p>
-
-    <div class="guide-section-title">🔒 Kỹ thuật bảo mật 1: Chạy dưới quyền Non-Root User</div>
-    <p>Mặc định, các tiến trình trong container chạy bằng quyền root. Nếu hacker chiếm quyền kiểm soát app, chúng có thể phá hoại cả máy chủ vật lý. Hãy chuyển sang quyền user hạn chế:</p>
+    <div class="guide-card-tag" style="color:#bb86fc;border-color:rgba(187,134,252,0.3);margin-bottom:0.8rem">DOCKER SECURITY</div>
+    <h2>Tối Ưu Hóa & Bảo Mật Docker Môi Trường Production</h2>
+    <p class="guide-subtitle">Hướng dẫn chi tiết về Multi-stage build, tối ưu hóa layer caching, .dockerignore và bảo mật Non-root.</p>
     
-    <div class="cmd-block">FROM node:22-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-FROM node:22-alpine AS runner
-WORKDIR /app
-# Đảm bảo thư mục app thuộc sở hữu của user node (đã có sẵn trong alpine image)
-COPY --chown=node:node package*.json ./
-RUN npm ci --only=production
-COPY --chown=node:node --from=builder /app/dist ./dist
-
-# Thay đổi user thực thi tiến trình
-USER node
-EXPOSE 3000
-CMD ["node", "dist/main.js"]</div>
-
-    <div class="guide-section-title">⚡ Kỹ thuật tối ưu 2: Tận dụng cơ chế Caching Layers</div>
-    <p>Mỗi câu lệnh trong Dockerfile tạo ra một layer mới. Nếu file nguồn thay đổi, tất cả các layer phía sau nó sẽ bị mất cache. Vì vậy, ta luôn copy các file dependency trước rồi cài đặt chúng trước khi copy toàn bộ mã nguồn:</p>
+    <div class="guide-section-title">🐳 1. Tận dụng Cơ chế Caching Layers</div>
+    <p>Docker build image tuần tự theo các layer tương ứng với từng dòng lệnh trong Dockerfile. Nếu một layer thay đổi, toàn bộ các layer phía sau nó bắt buộc phải rebuild từ đầu. Do đó ta cần cấu hình copy dependency trước khi copy source code:</p>
     
-    <div class="cmd-block"># SAI LẦM: Làm mất cache package.json khi đổi bất kỳ dòng code nào
+    <div class="cmd-block"># SAI LẦM KHIÊN LỚP NPM INSTALL PHẢI CHẠY LẠI MỖI KHI ĐỔI CODE
 COPY . .
 RUN npm install
 
-# CHUẨN SENIOR: Tận dụng tối đa cache layer
+# CẤU HÌNH CHUẨN: Chỉ chạy lại npm install khi file package.json thay đổi
 COPY package*.json ./
 RUN npm ci
 COPY . .</div>
 
-    <div class="guide-section-title">🛡️ Quét lỗ hổng Image với Trivy</div>
-    <p>Trong quy trình DevSecOps, trước khi push image lên Registry, ta cần chạy scan để tìm các thư viện lỗi thời, độc hại:</p>
-    <div class="cmd-block"># Cài đặt và quét image
-trivy image --severity HIGH,CRITICAL node-app:latest</div>
+    <div class="guide-section-title">📂 2. Tầm quan trọng của .dockerignore</div>
+    <p>Khi chạy lệnh build, Docker sẽ đóng gói toàn bộ thư mục hiện tại gửi lên Docker Daemon (Build Context). Nếu thư mục chứa các file rác như \`node_modules\`, \`.git\`, hoặc các file logs lớn, dung lượng context sẽ phình to dẫn đến build cực chậm. Hãy tạo file \`.dockerignore\` ở thư mục gốc:</p>
+    
+    <div class="cmd-block"># .dockerignore
+node_modules
+npm-debug.log
+dist
+build
+.git
+.github
+Dockerfile
+docker-compose.yml</div>
+
+    <div class="guide-section-title">🔒 3. Bảo mật Non-Root User & Giới hạn tài nguyên</div>
+    <p>Tiến trình chạy trong container theo mặc định được gán quyền root máy chủ. Để giảm thiểu rủi ro bị tấn công leo thang đặc quyền (Container Escape), ta thiết lập user hạn chế quyền:</p>
+    
+    <div class="cmd-block"># Tạo user không có đặc quyền root
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+WORKDIR /app
+COPY --chown=appuser:appgroup package*.json ./
+RUN npm ci
+COPY --chown=appuser:appgroup . .
+# Chuyển quyền thực thi sang user vừa tạo
+USER appuser
+EXPOSE 3000
+CMD ["npm", "start"]</div>
+
+    <p>Đồng thời khi chạy container, luôn giới hạn lượng RAM và CPU tối đa để tránh lỗi rò rỉ bộ nhớ (Memory leak) làm treo cả máy chủ:</p>
+    <div class="cmd-block">docker run -d \\
+  --name app-secured \\
+  --memory="512m" \\
+  --cpus="0.5" \\
+  --restart-on-failure \\
+  app-image:latest</div>
   `,
 
   'cicd-github': `
     <div class="guide-card-tag" style="color:#82b1ff;border-color:rgba(130,177,255,0.3);margin-bottom:0.8rem">CI/CD Pipeline</div>
-    <h2>CI/CD Pipeline với GitHub Actions + Docker + VPS</h2>
-    <p class="guide-subtitle">Kiến trúc CI/CD chuẩn: Build tự động trên runner của GitHub Actions, đẩy lên Docker Hub và SSH deploy lên VPS.</p>
-    
+    <h2>CI/CD Pipeline Hoàn Chỉnh Với GitHub Actions</h2>
+    <p class="guide-subtitle">Thiết lập luồng CI tự động build & push Docker image lên Docker Hub, kết hợp CD tự động deploy lên VPS thông qua SSH.</p>
+
     <div class="thesis-quote">
-      <strong>Nguyên lý bảo mật:</strong> Không lưu thông tin VPS trong mã nguồn công khai. Sử dụng <strong>GitHub Secrets</strong> để mã hóa các thông tin nhạy cảm: IP máy chủ, Token Docker Hub, SSH Private Key để kết nối an toàn.
+      <strong>Cơ cấu hoạt động của Pipeline:</strong><br>
+      • <strong>CI (Continuous Integration):</strong> Lập trình viên push code lên nhánh \`main\` -> GitHub trigger runner ảo -> Check-out code -> Đăng nhập Docker Registry -> Build & Test app -> Đẩy Docker image lên Docker Hub với tag version.
+      <br>• <strong>CD (Continuous Deployment):</strong> Runner kết nối SSH bảo mật vào VPS -> Di chuyển đến thư mục project -> Chạy lệnh pull image mới -> Chạy Docker Compose up để nâng cấp app không downtime.
     </div>
 
-    <div class="guide-section-title">📝 Cấu hình Pipeline (.github/workflows/deploy.yml)</div>
-    <div class="cmd-block">name: Production Deploy
+    <div class="guide-section-title">🔐 Cấu hình GitHub Secrets (Bắt buộc)</div>
+    <p>Để bảo mật hạ tầng, bạn cần khai báo các biến bảo mật trong mục **Repository Settings -> Secrets and Variables -> Actions**:</p>
+    <ul>
+      <li>\`DOCKERHUB_USERNAME\`: Tài khoản đăng nhập Docker Hub.</li>
+      <li>\`DOCKERHUB_TOKEN\`: Access Token (PAT) được sinh từ Docker Hub Security.</li>
+      <li>\`VPS_HOST\`: Địa chỉ IP Public của máy chủ VPS của bạn.</li>
+      <li>\`VPS_USER\`: User đăng nhập SSH (thường là \`root\` hoặc \`ubuntu\`).</li>
+      <li>\`VPS_SSH_KEY\`: Khóa SSH Private Key tương ứng của user trên VPS (cặp khóa dùng để kết nối không cần mật khẩu).</li>
+    </ul>
+
+    <div class="guide-section-title">📝 File cấu hình Pipeline (.github/workflows/deploy.yml)</div>
+    <div class="cmd-block">name: Production Deployment Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build-and-push:
+    name: Build Docker Image & Push to Hub
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -412,274 +482,371 @@ jobs:
           username: \${{ secrets.DOCKERHUB_USERNAME }}
           password: \${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and Push Docker image
+      - name: Build and Push Image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: \${{ secrets.DOCKERHUB_USERNAME }}/my-app:latest
+          tags: |
+            \${{ secrets.DOCKERHUB_USERNAME }}/my-web-app:latest
+            \${{ secrets.DOCKERHUB_USERNAME }}/my-web-app:\${{ github.sha }}
 
   deploy:
+    name: Deploy to Production VPS
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Execute remote SSH commands
+      - name: SSH to VPS and Upgrade Container
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: \${{ secrets.VPS_HOST }}
           username: \${{ secrets.VPS_USER }}
           key: \${{ secrets.VPS_SSH_KEY }}
+          port: 22
           script: |
-            cd /opt/my-app
+            cd /var/www/my-app
+            # Đăng nhập registry private nếu cần
+            docker login -u \${{ secrets.DOCKERHUB_USERNAME }} -p \${{ secrets.DOCKERHUB_TOKEN }}
+            # Pull image mới nhất về
             docker compose pull
-            docker compose up -d
+            # Khởi chạy đè container mới, xóa container mồ côi
+            docker compose up -d --remove-orphans
+            # Dọn dẹp các layers image thừa để tránh đầy ổ cứng
             docker image prune -f</div>
   `,
 
   'cicd-gitlab': `
     <div class="guide-card-tag" style="color:#ff8a80;border-color:rgba(255,138,128,0.3);margin-bottom:0.8rem">CI/CD Pipeline</div>
-    <h2>CI/CD với GitLab CI/CD & Self-Hosted Runner</h2>
-    <p class="guide-subtitle">Cài đặt GitLab runner trên hạ tầng cá nhân để tiết kiệm chi phí và tăng tốc build với Docker-in-Docker (dind).</p>
+    <h2>GitLab CI/CD: Đăng Ký Runner & Cấu Hình Pipeline</h2>
+    <p class="guide-subtitle">Hướng dẫn đăng ký GitLab Runner tự lưu trữ (Self-hosted) và xây dựng luồng pipeline tối ưu hóa bộ nhớ Cache.</p>
     
-    <div class="guide-section-title">⚙️ Cấu hình .gitlab-ci.yml</div>
+    <div class="guide-section-title">⚙️ 1. Hướng dẫn Đăng Ký GitLab Runner trên VPS</div>
+    <p>Để chạy các job trong GitLab CI, bạn cần cài đặt agent Runner trên VPS của mình:</p>
+    <div class="cmd-block"># Tải về GitLab Runner Binary
+sudo curl -L --output /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
+sudo chmod +x /usr/local/bin/gitlab-runner
+
+# Cài đặt dịch vụ chạy nền
+sudo gitlab-runner install --user=gitlab-runner --working-directory=/home/gitlab-runner
+sudo gitlab-runner start
+
+# Thực hiện đăng ký (Register) Runner với GitLab Project
+sudo gitlab-runner register \\
+  --url https://gitlab.com/ \\
+  --registration-token PROJECT_REGISTRATION_TOKEN \\
+  --executor docker \\
+  --docker-image "docker:24.0.5" \\
+  --docker-volumes "/var/run/docker.sock:/var/run/docker.sock"</div>
+
+    <div class="guide-section-title">📊 2. So sánh Cache vs Artifacts trong GitLab</div>
+    <ul>
+      <li><strong>Cache:</strong> Lưu trữ các tệp phụ thuộc giữa các lần chạy job (Ví dụ: thư mục \`node_modules/\`, \`.npm/\`). Nếu dependencies không đổi, job tiếp theo sẽ tải cache về giúp giảm 70% thời gian chạy. Cache có thể bị xóa hoặc ghi đè tùy chọn.</li>
+      <li><strong>Artifacts:</strong> Lưu trữ sản phẩm đầu ra đã được biên dịch xong (Ví dụ: thư mục \`dist/\`, file nhị phân compiled). Artifacts được truyền tiếp sang các stage sau của cùng một pipeline và được GitLab lưu trên server để tải về từ giao diện Web.</li>
+    </ul>
+
+    <div class="guide-section-title">📝 Cấu hình tối ưu Pipeline (.gitlab-ci.yml)</div>
+    <p>Dưới đây là file cấu hình chuẩn DevOps Senior, sử dụng dịch vụ Docker-in-Docker (\`dind\`) để build image:</p>
+    
     <div class="cmd-block">stages:
   - build
   - deploy
 
 variables:
-  DOCKER_IMAGE: registry.gitlab.com/my-group/my-project:latest
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+  IMAGE_TAG: \$CI_REGISTRY_IMAGE:\$CI_COMMIT_REF_SLUG
 
+# Định nghĩa Cache toàn cục cho NPM dependencies
 cache:
-  key: \${CI_COMMIT_REF_SLUG}
+  key: \$CI_COMMIT_REF_SLUG
   paths:
     - .npm/
+    - node_modules/
 
-build_job:
+build-job:
   stage: build
   image: docker:24.0.5
   services:
     - docker:24.0.5-dind
   before_script:
-    - docker login -u \${CI_REGISTRY_USER} -p \${CI_REGISTRY_PASSWORD} \${CI_REGISTRY}
+    - docker login -u \$CI_REGISTRY_USER} -p \$CI_REGISTRY_PASSWORD \$CI_REGISTRY
   script:
-    - docker build --cache-from \${DOCKER_IMAGE} -t \${DOCKER_IMAGE} .
-    - docker push \${DOCKER_IMAGE}
+    # Tận dụng cache từ registry để build nhanh hơn
+    - docker pull \$IMAGE_TAG || true
+    - docker build --cache-from \$IMAGE_TAG -t \$IMAGE_TAG .
+    - docker push \$IMAGE_TAG
 
-deploy_job:
+deploy-job:
   stage: deploy
   image: alpine:latest
   before_script:
     - apk add --no-cache openssh-client
-    - eval $(ssh-agent -s)
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\\r' | ssh-add -
+    - eval \$(ssh-agent -s)
+    - echo "\$SSH_PRIVATE_KEY" | tr -d '\\r' | ssh-add -
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
-    - ssh-keyscan $VPS_HOST >> ~/.ssh/known_hosts
+    - ssh-keyscan \$VPS_HOST >> ~/.ssh/known_hosts
   script:
-    - ssh $VPS_USER@$VPS_HOST "cd /app && docker compose pull && docker compose up -d"</div>
+    - ssh \$VPS_USER@\$VPS_HOST "cd /app && docker compose pull && docker compose up -d"</div>
   `,
 
   'git-ssh': `
     <div class="guide-card-tag" style="color:#ffb74d;border-color:rgba(255,183,77,0.3);margin-bottom:0.8rem">GIT</div>
-    <h2>Cấu hình SSH Keys cho Nhiều Tài khoản GitHub & GitLab</h2>
-    <p class="guide-subtitle">Cấu hình SSH client tinh tế giúp chuyển mạch tài khoản Git mượt mà.</p>
+    <h2>Quản Lý Nhiều SSH Keys Cho GitHub & GitLab</h2>
+    <p class="guide-subtitle">Hướng dẫn giải quyết tận gốc vấn đề xung đột tài khoản Git cá nhân và công ty trên cùng một máy local.</p>
 
-    <div class="guide-section-title">🔑 Bước 1: Tạo các cặp khóa riêng biệt</div>
-    <div class="cmd-block"># Khóa cho công việc công ty
-ssh-keygen -t ed25519 -C "work@company.com" -f ~/.ssh/id_ed25519_work
+    <div class="guide-section-title">🔑 1. Tạo các cặp khóa bảo mật ED25519</div>
+    <p>ED25519 là thuật toán mã hóa hiện đại, an toàn và nhanh hơn rất nhiều so với thuật toán RSA cũ. Hãy chạy các lệnh sau trong terminal của bạn:</p>
+    <div class="cmd-block"># Tạo SSH Key cho tài khoản công ty (Work)
+ssh-keygen -t ed25519 -C "huy.luu@company.com" -f ~/.ssh/id_ed25519_work
 
-# Khóa cho các dự án cá nhân
-ssh-keygen -t ed25519 -C "personal@email.com" -f ~/.ssh/id_ed25519_personal</div>
+# Tạo SSH Key cho tài khoản cá nhân (Personal)
+ssh-keygen -t ed25519 -C "luuhuy.personal@gmail.com" -f ~/.ssh/id_ed25519_personal</div>
 
-    <div class="guide-section-title">🚀 Bước 2: Thiết lập file ~/.ssh/config</div>
-    <div class="cmd-block"># Tài khoản Công việc (Work GitHub)
+    <div class="guide-section-title">🚀 2. Viết file cấu hình SSH Client (~/.ssh/config)</div>
+    <p>Tạo hoặc mở file \`~/.ssh/config\` và thiết lập các alias chuyển mạch tài khoản tự động:</p>
+    <div class="cmd-block"># Cấu hình cho tài khoản Công việc (Work)
 Host github.com-work
   HostName github.com
   User git
   IdentityFile ~/.ssh/id_ed25519_work
+  IdentitiesOnly yes
 
-# Tài khoản Cá nhân (Personal GitHub)
+# Cấu hình cho tài khoản Cá nhân (Personal)
 Host github.com-personal
   HostName github.com
   User git
-  IdentityFile ~/.ssh/id_ed25519_personal</div>
+  IdentityFile ~/.ssh/id_ed25519_personal
+  IdentitiesOnly yes</div>
 
-    <div class="guide-section-title">⚙️ Bước 3: Áp dụng khi Clone hoặc cấu hình Remote URL</div>
-    <p>Thay vì clone URL mặc định, hãy thay đổi host tương ứng trong config:</p>
-    <div class="cmd-block"># Thay đổi từ: git@github.com:user/repo.git
-# Thành:
-git clone git@github.com-personal:user/repo.git</div>
+    <div class="guide-section-title">⚙️ 3. Cách sử dụng khi Clone và làm việc thực tế</div>
+    <p>Khi sao chép link clone SSH từ GitHub, hãy thay thế cụm từ mặc định \`github.com\` bằng alias bạn đã cấu hình:</p>
+    <div class="cmd-block"># Link gốc: git@github.com:my-company/admin-dashboard.git
+# Lệnh clone thực tế:
+git clone git@github.com-work:my-company/admin-dashboard.git
+
+# Link gốc: git@github.com:huy293/devops-flowchart.git
+# Lệnh clone thực tế:
+git clone git@github.com-personal:huy293/devops-flowchart.git</div>
+    
+    <p>Để đảm bảo thông tin Commit Author (Name/Email) chính xác cho từng dự án, hãy truy cập vào thư mục repo dự án đó và chạy lệnh cấu hình local:</p>
+    <div class="cmd-block"># Trong thư mục dự án công việc:
+git config user.name "Huy Luu (Work)"
+git config user.email "huy.luu@company.com"
+
+# Trong thư mục dự án cá nhân:
+git config user.name "huy293"
+git config user.email "luuhuy.personal@gmail.com"</div>
   `,
 
   'k8s-core': `
     <div class="guide-card-tag" style="color:#64b5f6;border-color:rgba(100,181,246,0.3);margin-bottom:0.8rem">KUBERNETES</div>
-    <h2>Kubernetes (K8s) Cơ Bản: Control Plane & Worker Nodes</h2>
-    <p class="guide-subtitle">Hiểu rõ kiến trúc điều phối container tự động cho hệ thống phân tán (Distributed System).</p>
+    <h2>Kiến Trúc Kubernetes & Khởi Tạo Manifest Chuẩn Doanh Nghiệp</h2>
+    <p class="guide-subtitle">Đi sâu vào hoạt động nội tại của K8s cluster và cơ chế cấu hình mô tả khai báo (Declarative).</p>
 
-    <div class="guide-section-title">☸️ Phân tích Kiến trúc K8s Cluster</div>
-    <ul>
-      <li><strong>Control Plane (Master Node):</strong> Đầu não quản lý trạng thái mong muốn (desired state) của hệ thống.
-        <ul>
-          <li><strong>kube-apiserver:</strong> Điểm tiếp nhận mọi truy vấn cấu hình (REST API).</li>
-          <li><strong>etcd:</strong> Cơ sở dữ liệu dạng Key-Value phân tán lưu trữ toàn bộ cấu hình cluster.</li>
-          <li><strong>kube-scheduler:</strong> Phân phối pods vào các worker nodes dựa trên tài nguyên trống.</li>
-          <li><strong>kube-controller-manager:</strong> Quản lý các vòng lặp kiểm soát (Replication Controller, Node Controller).</li>
-        </ul>
-      </li>
-      <li><strong>Worker Node:</strong> Nơi trực tiếp chạy các container ứng dụng.
-        <ul>
-          <li><strong>kubelet:</strong> Agent giám sát trạng thái của Container và Pod trên node.</li>
-          <li><strong>kube-proxy:</strong> Quản lý luật mạng để định tuyến lưu lượng (iptables/IPVS).</li>
-          <li><strong>Container Runtime (CRI):</strong> Engine chạy container thực sự (containerd, CRI-O).</li>
-        </ul>
-      </li>
-    </ul>
+    <div class="guide-section-title">☸️ 1. Phân Tích Luồng Hoạt Động Của Control Plane</div>
+    <p>Khi bạn chạy lệnh \`kubectl apply -f manifest.yaml\`, quy trình điều phối diễn ra như sau:</p>
+    <ol>
+      <li>Lệnh gửi đến **kube-apiserver** để xác thực quyền truy cập và kiểm tra cú pháp YAML.</li>
+      <li>**kube-apiserver** ghi nhận cấu hình mong muốn vào cơ sở dữ liệu **etcd**.</li>
+      <li>**kube-controller-manager** phát hiện ra cấu hình mong muốn có 3 pods nhưng hệ thống hiện tại chưa có pod nào. Nó gửi lệnh tạo pods.</li>
+      <li>**kube-scheduler** quét tài nguyên của các máy vật lý (Worker Nodes), lựa chọn node tối ưu nhất và gán Pod vào node đó.</li>
+      <li>**kubelet** chạy trên Worker Node đích nhận thông báo, ra lệnh cho Container Runtime (containerd) pull image và chạy container.</li>
+    </ol>
 
-    <div class="guide-section-title">📝 Ví dụ YAML Deployment + Service hoàn chỉnh</div>
+    <div class="guide-section-title">📝 2. Giải nghĩa chi tiết file Manifest Deployment + Service</div>
+    <p>Dưới đây là file YAML chuẩn hóa sản xuất của một web service sử dụng cơ chế High Availability:</p>
     <div class="cmd-block">apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: my-web-app
+  name: microservice-web
+  namespace: production
   labels:
-    app: web
+    app: node-app
+    tier: frontend
 spec:
-  replicas: 3
+  replicas: 3 # Chạy 3 Pods phân tán trên các node để tránh sập app
+  strategy:
+    type: RollingUpdate # Cập nhật ứng dụng tuần tự không downtime
+    rollingUpdate:
+      maxSurge: 1       # Cho phép spawn tối đa 1 pod mới trong khi cập nhật
+      maxUnavailable: 0 # Đảm bảo không có pod nào bị ngắt kết nối trong lúc update
   selector:
     matchLabels:
-      app: web
+      app: node-app # Phải khớp hoàn toàn với label của Pod ở dưới
   template:
     metadata:
       labels:
-        app: web
+        app: node-app
     spec:
       containers:
-      - name: nginx-server
-        image: nginx:1.25-alpine
+      - name: app-container
+        image: ghcr.io/username/node-app:v1.2.0
         ports:
-        - containerPort: 80
+        - containerPort: 3000
+        # Thiết lập ngưỡng tài nguyên tránh lỗi sập cả Node vật lý
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: my-web-service
+  name: web-service-entrypoint
+  namespace: production
 spec:
   selector:
-    app: web
+    app: node-app # Định tuyến traffic vào các Pod có label app=node-app
   ports:
   - protocol: TCP
-    port: 80
-    targetPort: 80
-  type: ClusterIP</div>
+    port: 80        # Port của Service lộ ra cho mạng nội bộ cluster
+    targetPort: 3000 # Port thực tế ứng dụng chạy bên trong Container
+  type: ClusterIP   # Chỉ expose trong mạng nội bộ Cluster</div>
   `,
 
   'k8s-config': `
     <div class="guide-card-tag" style="color:#4dd0e1;border-color:rgba(77,208,225,0.3);margin-bottom:0.8rem">KUBERNETES</div>
-    <h2>Quản lý Cấu hình K8s: ConfigMap, Secret & Ingress</h2>
-    <p class="guide-subtitle">Làm chủ việc phân phối cấu hình động, thông tin mật và thiết lập định tuyến Ingress traffic.</p>
+    <h2>Quản Lý ConfigMap, Secrets & Expose Domain Với Nginx Ingress</h2>
+    <p class="guide-subtitle">Hướng dẫn đưa cấu hình động, thông tin mật vào pod và cài đặt định tuyến HTTP/HTTPS ngoài Cluster.</p>
 
-    <div class="guide-section-title">📝 Khái niệm nền tảng</div>
+    <div class="guide-section-title">📂 1. Phân biệt Cách Truyền Config: Environment vs Volume Mount</div>
     <ul>
-      <li><strong>ConfigMap:</strong> Dùng để lưu trữ các thông tin cấu hình không nhạy cảm dưới dạng key-value. Ứng dụng đọc qua biến môi trường hoặc volume mount.</li>
-      <li><strong>Secret:</strong> Tương tự như ConfigMap nhưng dùng để lưu mật khẩu, API key, chứng chỉ SSL. Dữ liệu trong Secret mặc định được encode dạng Base64 (lưu ý: Base64 chỉ là encode, chưa phải mã hóa bảo mật).</li>
-      <li><strong>Ingress:</strong> Quy định các luật định tuyến HTTP/HTTPS từ ngoài internet vào các Service bên trong Cluster. Hoạt động như một Reverse Proxy cấp Cluster.</li>
+      <li><strong>Dạng Biến môi trường (Environment Variables):</strong> Đơn giản, dễ đọc trực tiếp trong code. Tuy nhiên, nếu bạn cập nhật giá trị trong ConfigMap/Secret trên K8s, giá trị biến môi trường trong Container **SẼ KHÔNG TỰ CẬP NHẬT** trừ khi bạn restart pod.</li>
+      <li><strong>Dạng File (Volume Mount):</strong> K8s sẽ mount ConfigMap/Secret thành các file trong một thư mục chỉ định. Cách này có ưu điểm vượt trội: Khi bạn sửa ConfigMap trên Cluster, K8s sẽ tự động đồng bộ giá trị mới vào file trong container (sau khoảng 10-60 giây) mà **không cần restart pod**.</li>
     </ul>
 
-    <div class="guide-section-title">📂 Thực hành YAML Manifest: ConfigMap, Secret và Ingress</div>
+    <div class="guide-section-title">🛡️ 2. Cách Tạo & Mã hóa/Giải mã K8s Secrets</div>
+    <p>Kubernetes Secret lưu trữ thông tin dưới dạng **Base64**. Hãy cẩn thận: Base64 chỉ là cơ chế biến đổi văn bản để tránh lộ mật khẩu vô tình, nó **không phải** là mã hóa. Để mã hóa thực sự cần bật KMS provider trong etcd hoặc dùng HashiCorp Vault.</p>
+    <div class="cmd-block"># Mã hóa một chuỗi mật khẩu sang Base64 bằng Terminal
+echo -n "mypassword123" | base64
+# Kết quả trả về: bXlwYXNzd29yZDEyMw==
+
+# Giải mã Base64 ngược lại
+echo -n "bXlwYXNzd29yZDEyMw==" | base64 --decode
+# Kết quả trả về: mypassword123</div>
+
+    <div class="guide-section-title">📝 File Manifest YAML Tổng Hợp</div>
     <div class="cmd-block">apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: app-config
+  name: backend-configs
+  namespace: production
 data:
-  DB_HOST: "postgres-service"
-  DB_PORT: "5432"
+  API_URL: "https://api.mycompany.com"
+  CACHE_TTL: "3600"
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: app-secret
+  name: db-credentials
+  namespace: production
 type: Opaque
 data:
-  # Giá trị 'my-super-secret-password' đã mã hóa Base64
-  DB_PASSWORD: bXktc3VwZXItc2VjcmV0LXBhc3N3b3Jk
+  # Mật khẩu đã encode Base64
+  DB_PASSWORD: bXlwYXNzd29yZDEyMw==
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: app-ingress
+  name: company-ingress-routing
+  namespace: production
   annotations:
     kubernetes.io/ingress.class: "nginx"
+    # Tự động xin chứng chỉ SSL từ Let's Encrypt qua cert-manager
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
 spec:
   tls:
   - hosts:
-    - app.my-domain.com
-    secretName: app-tls-secret
+    - app.mycompany.com
+    secretName: app-tls-certificates # Tên secret lưu chứng chỉ SSL sau khi xin thành công
   rules:
-  - host: app.my-domain.com
+  - host: app.mycompany.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: my-web-service
+            name: web-service-entrypoint
             port:
               number: 80</div>
   `,
 
   'k8s-helm': `
     <div class="guide-card-tag" style="color:#9575cd;border-color:rgba(149,117,205,0.3);margin-bottom:0.8rem">KUBERNETES</div>
-    <h2>Đóng gói Ứng dụng Kubernetes với Helm Chart</h2>
-    <p class="guide-subtitle">Tiêu chuẩn hóa quy trình deploy microservices trên K8s bằng template engine.</p>
+    <h2>Helm Chart: Đóng Gói Ứng Dụng Chuyên Nghiệp</h2>
+    <p class="guide-subtitle">Tối ưu hóa quản trị tài nguyên Kubernetes bằng cách biến các file manifest tĩnh thành các gói dynamic package có thể tái sử dụng.</p>
 
-    <div class="guide-section-title">📂 Cấu trúc thư mục của một Helm Chart</div>
-    <div class="cmd-block">my-chart/
-  Chart.yaml          # File metadata chứa phiên bản chart và thông tin app
-  values.yaml         # Chứa toàn bộ các biến cấu hình mặc định
-  charts/             # Thư mục chứa các sub-charts phụ thuộc
-  templates/          # Các tệp định nghĩa tài nguyên được viết bằng template Go
-    deployment.yaml
-    service.yaml
-    ingress.yaml
-    _helpers.tpl      # Khai báo các khối template tái sử dụng</div>
+    <div class="guide-section-title">📂 1. Cấu Trúc File & Thư Mục Helm Chart Chuẩn</div>
+    <p>Khi bạn chạy lệnh \`helm create my-chart\`, Helm sẽ tạo ra một bộ khung cấu trúc thư mục sau:</p>
+    <ul>
+      <li>\`Chart.yaml\`: File mô tả siêu dữ liệu (Tên chart, Phiên bản API, Phiên bản ứng dụng).</li>
+      <li>\`values.yaml\`: File quan trọng nhất, lưu trữ tất cả các giá trị cấu hình mặc định (Image, Replicas, Port, Ingress...). Người dùng sẽ ghi đè cấu hình tại đây.</li>
+      <li>\`templates/\`: Chứa các file manifest YAML của Kubernetes được chèn mã Go-template.</li>
+      <li>\`templates/notes.txt\`: Đoạn văn bản hướng dẫn hiển thị lên màn hình console sau khi cài đặt thành công.</li>
+    </ul>
 
-    <div class="guide-section-title">⚙️ Template hóa manifest (Ví dụ templates/deployment.yaml)</div>
-    <div class="cmd-block">apiVersion: apps/v1
+    <div class="guide-section-title">⚙️ 2. Ví dụ Template Hóa file deployment.yaml</div>
+    <p>Thay vì ghi cứng các thông số, ta dùng biểu thức \`{{ .Values.ten_bien }}\` để lấy cấu hình động từ file \`values.yaml\`:</p>
+    <div class="cmd-block"># templates/deployment.yaml
+apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "my-chart.fullname" . }}
+  name: {{ .Release.Name }}-app
+  labels:
+    app: {{ .Chart.Name }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "my-chart.name" . }}
+      app: {{ .Chart.Name }}
   template:
     metadata:
       labels:
-        app: {{ include "my-chart.name" . }}
+        app: {{ .Chart.Name }}
     spec:
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.service.port }}</div>
 
-    <div class="guide-section-title">🛠️ Các câu lệnh làm việc với Helm</div>
-    <div class="cmd-block"># Tạo mới một Chart
-helm create my-app-chart
-
-# Kiểm tra cú pháp lỗi trong chart
-helm lint ./my-app-chart
-
-# Chạy thử nghiệm giả lập (Dry Run) để xem kết quả gen manifest
-helm install my-release ./my-app-chart --dry-run --debug
-
-# Install chart lên cluster thực tế
-helm install my-app-prod ./my-app-chart -f production-values.yaml
-
-# Rollback phiên bản nếu xảy ra lỗi
-helm rollback my-app-prod 1 # Quay về revision số 1</div>
+    <div class="guide-section-title">🛠️ 3. Bảng Tra Cứu Lệnh Helm CLI Nhanh</div>
+    <table style="width:100%; border-collapse:collapse; margin-bottom:1.5rem; text-align:left; color:#cbd5e1;">
+      <thead>
+        <tr style="border-bottom:2px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+          <th style="padding:10px 0; color:#9575cd;">Lệnh Helm</th>
+          <th style="padding:10px 0;">Giải thích Chức năng</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">helm lint ./my-chart</td>
+          <td style="padding:10px 0;">Kiểm tra lỗi cú pháp YAML và logic cấu hình của Chart.</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">helm install my-app ./my-chart</td>
+          <td style="padding:10px 0;">Deploy ứng dụng lên Kubernetes cluster dưới tên bản phát hành (release) 'my-app'.</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">helm upgrade my-app ./my-chart -f values-prod.yaml</td>
+          <td style="padding:10px 0;">Cập nhật phiên bản mới hoặc ghi đè file values cấu hình sản xuất.</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">helm rollback my-app 2</td>
+          <td style="padding:10px 0;">Khôi phục ứng dụng ngay lập tức về revision thứ 2 nếu bản cập nhật mới bị lỗi.</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">helm uninstall my-app</td>
+          <td style="padding:10px 0;">Gỡ bỏ sạch toàn bộ tài nguyên đã tạo liên quan đến bản phát hành đó.</td>
+        </tr>
+      </tbody>
+    </table>
   `,
 
   'aapanel-proxy': `
@@ -737,8 +904,9 @@ helm rollback my-app-prod 1 # Quay về revision số 1</div>
     proxy_set_header Upgrade \$http_upgrade;
     proxy_set_header Connection "upgrade";
     
-    # Cấu hình timeouts
+    # Cấu hình timeouts và kích thước file upload
     proxy_read_timeout 86400;
+    client_max_body_size 50m;
 }</div>
   `,
 
