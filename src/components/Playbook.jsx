@@ -138,47 +138,103 @@ const guidesList = [
 const guideContent = {
   'docker-concepts': `
     <div class="guide-card-tag" style="color:#69f0ae;border-color:rgba(105,240,174,0.3);margin-bottom:0.8rem">DOCKER HANDBOOK</div>
-    <h2>Cẩm Nang Master Docker: Từ Cơ Bản Đến Nâng Cao</h2>
-    <p class="guide-subtitle">Hướng dẫn toàn diện về kiến trúc Docker, Dockerfile tối ưu, Docker Compose, Storage và Network Drivers.</p>
+    <h2>Cẩm Nang Master Docker Căn Bản: Từ Zero Đến Hero</h2>
+    <p class="guide-subtitle">Khám phá chi tiết từ kiến trúc cơ bản, vòng đời container, Dockerfile directives đến cơ chế mạng và lưu trữ dữ liệu.</p>
     
     <div class="thesis-quote">
-      <strong>Vấn đề kinh điển:</strong> "Code chạy ngon ở máy tôi nhưng sập trên server!"<br>
-      Docker giải quyết vấn đề này bằng cách đóng gói ứng dụng cùng toàn bộ môi trường chạy (runtime, thư viện, cấu hình) thành một block duy nhất gọi là Container. Giờ đây, ứng dụng của bạn sẽ chạy nhất quán ở bất kỳ máy chủ nào.
+      <strong>Vấn đề kinh điển của DevOps:</strong> "Code chạy ngon ở máy tôi nhưng sập trên server!"<br>
+      Docker giải quyết triệt để sự bất đồng bộ môi trường bằng cách đóng gói ứng dụng cùng toàn bộ môi trường chạy (runtime, thư viện, biến môi trường, tệp cấu hình) thành một khối bất biến duy nhất gọi là **Container**. Dù deploy lên VPS Ubuntu, CentOS hay Cloud AWS, ứng dụng luôn hoạt động giống hệt nhau.
     </div>
 
-    <div class="guide-section-title">1. Phân biệt Máy Ảo (VMs) và Docker Containers</div>
-    <p>Để hiểu tại sao Docker lại trở thành tiêu chuẩn công nghiệp, hãy nhìn vào sự so sánh kiến trúc dưới đây:</p>
+    <div class="guide-section-title">📊 1. Kiến Trúc Tổng Quan và So Sánh: Máy Ảo (VM) vs Docker Container</div>
+    <p>Để hiểu rõ tại sao Docker lại trở thành tiêu chuẩn vàng của ngành phần mềm, hãy xem xét bảng so sánh chi tiết dưới đây:</p>
+    
+    <table style="width:100%; border-collapse:collapse; margin-bottom:1.8rem; text-align:left; color:#cbd5e1; font-size:0.95rem;">
+      <thead>
+        <tr style="border-bottom:2px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+          <th style="padding:10px; color:#69f0ae;">Đặc tính</th>
+          <th style="padding:10px; color:#ffd54f;">Virtual Machines (VM)</th>
+          <th style="padding:10px; color:#52cbff;">Docker Containers</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px; font-weight:600;">Cơ chế hoạt động</td>
+          <td style="padding:10px;">Ảo hóa phần cứng qua Hypervisor (Type 1 hoặc 2)</td>
+          <td style="padding:10px;">Ảo hóa cấp hệ điều hành (Shared Host Kernel)</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px; font-weight:600;">Hệ điều hành khách</td>
+          <td style="padding:10px;">Mỗi VM chạy một Guest OS riêng (nặng nề)</td>
+          <td style="padding:10px;">Không có Guest OS (Chỉ chứa thư viện tối thiểu + Code)</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px; font-weight:600;">Dung lượng lưu trữ</td>
+          <td style="padding:10px;">Hàng chục Gigabytes (GBs) cho mỗi máy ảo</td>
+          <td style="padding:10px;">Vài chục đến vài trăm Megabytes (MBs)</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px; font-weight:600;">Thời gian khởi động</td>
+          <td style="padding:10px;">Vài phút (Cần boot toàn bộ OS)</td>
+          <td style="padding:10px;">Vài phần trăm giây đến vài giây (Chỉ start process)</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:10px; font-weight:600;">Hiệu năng</td>
+          <td style="padding:10px;">Bị suy giảm do lớp ảo hóa Hypervisor</td>
+          <td style="padding:10px;">Gần như tương đương Native Process chạy trên Host</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Kiến trúc Docker hoạt động theo mô hình **Client-Server**:</p>
     <ul>
-      <li><strong>Virtual Machines (Ảo hóa phần cứng):</strong> Mỗi VM cần chạy một Hệ điều hành khách (Guest OS) đầy đủ ở trên phần mềm ảo hóa Hypervisor (VMware, VirtualBox). Điều này ngốn hàng Gigabyte RAM/Disk và mất vài phút để boot.</li>
-      <li><strong>Docker Containers (Ảo hóa hệ điều hành):</strong> Các container dùng chung nhân hệ điều hành máy host (Shared Host OS Kernel). Chúng được cách ly hoàn toàn qua cơ chế <strong>Namespaces</strong> và được giới hạn tài nguyên bởi <strong>Control Groups (cgroups)</strong> của Linux. Khởi động chỉ mất vài phần trăm giây và siêu nhẹ.</li>
+      <li><strong>Docker Client:</strong> Nơi lập trình viên gõ các lệnh như \`docker build\`, \`docker run\`.</li>
+      <li><strong>Docker Daemon (dockerd):</strong> Chạy ngầm trên máy chủ, lắng nghe API requests và quản lý các đối tượng như Images, Containers, Networks, Volumes.</li>
+      <li><strong>Docker Registry:</strong> Nơi lưu trữ và chia sẻ các Docker Images (ví dụ: Docker Hub, Github Container Registry - GHCR, hoặc Private Registry).</li>
     </ul>
 
-    <div class="guide-section-title">2. Bản Chất Lớp File System: UnionFS & Copy-on-Write (CoW)</div>
-    <p>Docker Image không phải là một file nén zip đơn thuần, nó hoạt động dựa trên <strong>UnionFS (Union File System)</strong>:</p>
+    <div class="guide-section-title">⏳ 2. Vòng Đời Của Container (Container Lifecycle)</div>
+    <p>Một container không chỉ đơn thuần là chạy hay dừng, nó có một vòng đời rõ ràng với các trạng thái:</p>
     <ul>
-      <li><strong>Docker Image (Read-Only layers):</strong> Khi viết Dockerfile, mỗi câu lệnh tạo file (như \`COPY\` hoặc \`RUN\`) tạo ra một Layer chỉ đọc xếp chồng lên nhau. Các layer này được chia sẻ và tái sử dụng giữa các Image khác nhau để tiết kiệm đĩa cứng.</li>
-      <li><strong>Docker Container (Writable layer):</strong> Khi khởi động Container từ Image, Docker phủ thêm một lớp ghi được gọi là <strong>Writable Layer (Container Layer)</strong> ở trên cùng.</li>
-      <li><strong>Cơ chế Copy-on-Write (CoW):</strong> Khi một tiến trình trong container muốn sửa đổi file \`app.config\` ở lớp Read-Only bên dưới, Docker sẽ sao chép file đó lên lớp Writable layer trên cùng và thực hiện chỉnh sửa tại đây. Lớp Image gốc bên dưới hoàn toàn không bị ảnh hưởng, đảm bảo tính bất biến (Immutability).</li>
+      <li><strong>Created (Khởi tạo):</strong> Trạng thái sau khi chạy \`docker create\`. Docker đã thiết lập các lớp File System và cấu hình nhưng chưa chạy tiến trình chính bên trong.</li>
+      <li><strong>Running (Đang chạy):</strong> Container đang hoạt động và tiến trình chính (PID 1) đang thực thi. Trạng thái sau lệnh \`docker run\` hoặc \`docker start\`.</li>
+      <li><strong>Paused (Tạm dừng):</strong> Tất cả tiến trình bị đông cứng tạm thời bằng cơ chế \`cgroups freezer\`. Các tiến trình không tiêu thụ CPU nữa. Trạng thái sau khi dùng \`docker pause\`.</li>
+      <li><strong>Stopped (Dừng):</strong> Tiến trình chính nhận tín hiệu dừng \`SIGTERM\` (sau đó là \`SIGKILL\` nếu không dừng kịp trong 10 giây). Tài nguyên CPU và RAM được giải phóng hoàn toàn nhưng dữ liệu trên writable layer và các cấu hình mạng vẫn được lưu giữ. Trạng thái sau lệnh \`docker stop\`.</li>
+      <li><strong>Exited / Dead (Đã thoát / Đã chết):</strong> Container đã kết thúc tiến trình chính (thường trả về exit code 0 nếu thành công, hoặc >0 nếu có lỗi).</li>
     </ul>
 
-    <div class="guide-section-title">3. Hướng Dẫn Chi Tiết Các Chỉ Thị Trong Dockerfile</div>
-    <p>Dockerfile là kịch bản tự động hóa để build Docker Image. Dưới đây là giải nghĩa chi tiết các chỉ thị cốt lõi:</p>
+    <div class="guide-section-title">🧱 3. Bản Chất Lớp File System: UnionFS & Copy-on-Write (CoW)</div>
+    <p>Docker Image được xây dựng từ các lớp chỉ đọc chồng lên nhau. Đây là điểm mấu chốt giúp tiết kiệm dung lượng đĩa cứng khổng lồ thông qua **UnionFS**:</p>
     <ul>
-      <li><strong>FROM:</strong> Định nghĩa Image gốc làm nền móng (Ví dụ: \`FROM node:22-alpine\`). Nên chọn các tag phiên bản cụ thể và hậu tố \`alpine\` để tối ưu dung lượng và bảo mật.</li>
-      <li><strong>WORKDIR:</strong> Tạo và di chuyển vào thư mục làm việc bên trong container. Tránh dùng thư mục gốc \`/\` làm việc.</li>
-      <li><strong>COPY vs ADD:</strong> Cả hai đều copy file từ máy host vào container. Tuy nhiên, \`COPY\` an toàn và rõ ràng hơn. Chỉ dùng \`ADD\` khi bạn muốn tải file từ URL hoặc tự động giải nén file nén dạng \`.tar.gz\`.</li>
-      <li><strong>RUN:</strong> Chạy các lệnh shell trong quá trình **build** image để cài đặt thư viện (Ví dụ: \`RUN npm ci\` hoặc \`RUN apt-get update && apt-get install -y git\`).</li>
+      <li><strong>Image Layers (Read-Only):</strong> Mỗi chỉ thị trong Dockerfile như \`RUN\`, \`COPY\`, \`ADD\` tạo ra một layer mới. Các layer này là bất biến (immutable). Khi 2 image dùng chung một base image (ví dụ: \`node:22-alpine\`), các layer base này chỉ được lưu duy nhất một lần trên ổ đĩa.</li>
+      <li><strong>Container Layer (Writable):</strong> Khi bạn chạy container, Docker thêm một lớp mỏng có thể ghi được ở trên cùng. Tất cả thao tác tạo mới, sửa đổi hay xóa file của container đang chạy đều diễn ra trên lớp này.</li>
+      <li><strong>Cơ chế Copy-on-Write (CoW):</strong> Nếu container cần sửa đổi một file đã có trong lớp Image, Docker sẽ nhân bản file đó từ lớp chỉ đọc lên lớp ghi được (Container Layer) rồi mới tiến hành sửa đổi. File gốc ở lớp dưới hoàn toàn nguyên vẹn. Khi container bị xóa, toàn bộ lớp Writable Layer này sẽ biến mất theo.</li>
+    </ul>
+
+    <div class="guide-section-title">📝 4. Hướng Dẫn Chi Tiết Các Chỉ Chỉ Trong Dockerfile</div>
+    <p>Viết Dockerfile giống như việc lập trình môi trường. Dưới đây là giải nghĩa cặn kẽ các chỉ thị quan trọng nhất:</p>
+    <ul>
+      <li><strong>FROM:</strong> Định nghĩa Image nền tảng. Khuyên dùng các tag có phiên bản cụ thể kèm hậu tố \`alpine\` (ví dụ: \`node:22-alpine\`) để giảm thiểu size và hạn chế các lỗ hổng bảo mật không cần thiết.</li>
+      <li><strong>WORKDIR:</strong> Thiết lập thư mục làm việc cho bất kỳ lệnh \`RUN\`, \`CMD\`, \`ENTRYPOINT\`, \`COPY\`, \`ADD\` tiếp theo. Nếu thư mục chưa tồn tại, Docker sẽ tự động tạo nó.</li>
+      <li><strong>COPY vs ADD:</strong> Cả hai đều copy file từ máy host vào container. Tuy nhiên, hãy ưu tiên dùng **\`COPY\`** vì tính minh bạch và an toàn. Chỉ dùng **\`ADD\`** khi bạn thực sự cần tự động giải nén file tar cục bộ (ví dụ: \`ADD archive.tar.gz /app/\`) hoặc tải tệp qua URL.</li>
+      <li><strong>RUN:</strong> Thực thi các lệnh trong quá trình build để cài đặt dependencies, cấu hình hệ thống (Ví dụ: \`RUN npm install\`). Lệnh này tạo ra một layer mới.</li>
       <li><strong>CMD vs ENTRYPOINT:</strong>
-        <br>• \`CMD\`: Định nghĩa lệnh chạy mặc định khi container khởi chạy. Lệnh này có thể bị ghi đè hoàn toàn khi dùng \`docker run my-app <lệnh_mới>\`.
-        <br>• \`ENTRYPOINT\`: Định nghĩa executable chính của container. Các tham số truyền vào qua \`docker run\` sẽ được nối tiếp vào sau \`ENTRYPOINT\`.
+        <br>• \`ENTRYPOINT\`: Định nghĩa lệnh cố định luôn luôn chạy khi container khởi động (ví dụ: \`ENTRYPOINT ["npm"]\`).
+        <br>• \`CMD\`: Định nghĩa các tham số mặc định truyền vào cho \`ENTRYPOINT\` (ví dụ: \`CMD ["start"]\`). Người dùng có thể dễ dàng ghi đè tham số của \`CMD\` khi gõ lệnh run: \`docker run my-image run-dev\`.
       </li>
-      <li><strong>ENV:</strong> Thiết lập các biến môi trường tĩnh (Ví dụ: \`ENV NODE_ENV=production\`).</li>
-      <li><strong>EXPOSE:</strong> Khai báo cổng mạng container sẽ lắng nghe (Ví dụ: \`EXPOSE 3000\`). Đây chỉ là mô tả tài liệu, không tự động map port ra ngoài VPS.</li>
-      <li><strong>USER:</strong> Định danh user thực thi tiến trình. Nên tránh chạy bằng root bằng cách đổi sang user thường (Ví dụ: \`USER node\` hoặc \`USER 1000:1000\`).</li>
+      <li><strong>ENV vs ARG:</strong>
+        <br>• \`ARG\`: Biến chỉ có tác dụng trong quá trình build image (build-time variable). Không tồn tại trong container khi chạy.
+        <br>• \`ENV\`: Biến môi trường tồn tại cả trong quá trình build lẫn khi container đang chạy (run-time variable).
+      </li>
+      <li><strong>EXPOSE:</strong> Khai báo cổng mạng container sẽ lắng nghe khi chạy. Mang tính chất tài liệu hóa (Documentation), không tự động mapping port ra máy host trừ khi người dùng dùng cờ \`-P\`.</li>
+      <li><strong>VOLUME:</strong> Tạo một điểm gắn (mount point) với thư mục ngoài máy host để lưu trữ dữ liệu persistent.</li>
+      <li><strong>USER:</strong> Đổi user thực thi từ root mặc định sang user thường để tăng tính bảo mật (Ví dụ: \`USER node\`).</li>
     </ul>
 
-    <div class="guide-section-title">📂 Ví dụ Dockerfile Node.js/Vite Production Tối Ưu Hóa</div>
-    <div class="cmd-block"># Stage 1: Build môi trường nặng
+    <div class="guide-section-title">📂 Ví Dụ Dockerfile Tối Ưu Hóa Node.js Cho Production</div>
+    <p>Dưới đây là một ví dụ Dockerfile Node.js áp dụng kỹ thuật **Multi-stage build** để tối giản kích thước Image và tăng tốc độ deploy:</p>
+    
+    <div class="cmd-block"># Stage 1: Build & Biên dịch ứng dụng (Nặng nề)
 FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
@@ -186,107 +242,66 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Stage 2: Runtime siêu nhẹ chỉ chứa sản phẩm build
+# Stage 2: Runtime siêu nhẹ chỉ chứa file production
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package*.json ./
+# Chỉ cài các dependencies cần cho chạy production
 RUN npm ci --only=production
+# Copy code đã build từ Stage 1
 COPY --from=builder /app/dist ./dist
-# Chạy với user node hạn chế quyền để bảo mật
+# Chạy ứng dụng dưới quyền user node (hạn chế privilege)
 USER node
 EXPOSE 3000
-CMD ["node", "dist/server.js"]</div>
+CMD ["node", "dist/main.js"]</div>
 
-    <div class="guide-section-title">4. Docker Compose: Quản Lý Đa Container Trực Quan</div>
-    <p>Khi ứng dụng cần cơ sở dữ liệu và cache kết nối cùng nhau, sử dụng \`docker run\` thủ công rất phức tạp. <strong>Docker Compose</strong> giúp bạn gom tất cả vào một file định nghĩa \`docker-compose.yml\`:</p>
-    
-    <div class="cmd-block">version: '3.8'
-
-services:
-  web-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - DB_HOST=database
-      - DB_PASSWORD_FILE=/run/secrets/db_password
-    depends_on:
-      - database
-      - redis-cache
-    networks:
-      - backend-net
-    restart: always
-
-  database:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: app_db
-      POSTGRES_USER: app_user
-      POSTGRES_PASSWORD: secure_password_here
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    networks:
-      - backend-net
-    restart: always
-
-  redis-cache:
-    image: redis:7-alpine
-    networks:
-      - backend-net
-    restart: always
-
-networks:
-  backend-net:
-    driver: bridge
-
-volumes:
-  db-data:</div>
-
-    <div class="guide-section-title">5. Các Chế Độ Mạng (Network Drivers) & Lưu Trữ (Volumes)</div>
+    <div class="guide-section-title">🔌 5. Chế Độ Mạng (Network Drivers) & Lưu Trữ (Storage Mechanisms)</div>
+    <p>Docker cung cấp các driver mạng để linh hoạt kết nối và lưu trữ dữ liệu:</p>
     <ul>
-      <li><strong>Mạng Bridge:</strong> Các container kết nối vào chung một dải mạng ảo (VD: 172.18.0.0/16). Các container có thể liên lạc với nhau thông qua tên dịch vụ (DNS nội bộ của Docker). Đây là chế độ mạng mặc định và khuyên dùng.</li>
-      <li><strong>Mạng Host:</strong> Container dùng chung card mạng của VPS host, mang lại tốc độ mạng cực nhanh nhưng mất đi tính cô lập port.</li>
-      <li><strong>Named Volumes:</strong> Thư mục lưu dữ liệu do Docker tự động quản lý trên đĩa vật lý của host. Đảm bảo dữ liệu Database vẫn an toàn khi container bị stop hoặc xóa bỏ.</li>
-      <li><strong>Bind Mounts:</strong> Ánh xạ trực tiếp thư mục code local vào trong container. Rất hữu ích cho môi trường lập trình để hot-reload code ngay lập tức mà không cần rebuild image.</li>
+      <li><strong>Bridge Network (Mặc định):</strong> Tạo một switch mạng ảo trong máy host. Các container kết nối vào chung switch này và giao tiếp với nhau qua IP hoặc qua DNS nội bộ của Docker (Dùng tên Service). Thích hợp nhất cho ứng dụng chạy độc lập trên 1 máy VPS.</li>
+      <li><strong>Host Network:</strong> Loại bỏ hoàn toàn sự cách ly mạng. Container dùng chung card mạng và IP của máy host. Rất nhanh, giảm thiểu overhead nhưng dễ gây xung đột port.</li>
+      <li><strong>None Network:</strong> Vô hiệu hóa hoàn toàn mạng của container. Thích hợp cho các tiến trình tính toán offline bảo mật cao.</li>
+      <li><strong>Named Volumes:</strong> Thư mục lưu dữ liệu do Docker quản lý trong phân vùng riêng trên host (thường là \`/var/lib/docker/volumes/\`). Đây là cách an toàn nhất để lưu trữ dữ liệu của Database vì Docker quản lý vòng đời độc lập với container.</li>
+      <li><strong>Bind Mounts:</strong> Gắn trực tiếp một thư mục cụ thể từ ổ đĩa máy host vào container. Rất thích hợp cho môi trường phát triển (Development) để lập trình viên chỉnh sửa file code cục bộ và container lập tức hot-reload thay đổi.</li>
     </ul>
 
-    <div class="guide-section-title">🛠️ Bảng Cheatsheet Lệnh Docker CLI Cần Nhớ</div>
-    <table style="width:100%; border-collapse:collapse; margin-bottom:1.5rem; text-align:left; color:#cbd5e1;">
+    <div class="guide-section-title">⚡ 6. Cheatsheet Lệnh CLI Docker Hữu Ích Cho Công Việc Hàng Ngày</div>
+    <p>Dưới đây là bảng tổng hợp đầy đủ các nhóm câu lệnh CLI cốt lõi mà mọi kỹ sư DevOps cần nằm lòng:</p>
+
+    <table style="width:100%; border-collapse:collapse; margin-bottom:1.5rem; text-align:left; color:#cbd5e1; font-size:0.92rem;">
       <thead>
         <tr style="border-bottom:2px solid rgba(255,255,255,0.1); padding-bottom:10px;">
-          <th style="padding:10px 0; color:#69f0ae;">Nhóm Lệnh</th>
-          <th style="padding:10px 0; color:#52cbff;">Lệnh Thực Thi CLI</th>
-          <th style="padding:10px 0;">Mục Đích Sử Dụng</th>
+          <th style="padding:10px; color:#69f0ae; width:20%;">Nhóm Lệnh</th>
+          <th style="padding:10px; color:#52cbff; width:45%;">Lệnh CLI Chi Tiết</th>
+          <th style="padding:10px;">Công Dụng Thực Tế</th>
         </tr>
       </thead>
       <tbody>
         <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-          <td style="padding:10px 0; font-weight:600;">Images</td>
-          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">docker build -t app:v1 .</td>
-          <td style="padding:10px 0;">Build image từ Dockerfile trong thư mục hiện tại</td>
+          <td style="padding:10px; font-weight:600;">Quản lý Images</td>
+          <td style="padding:10px; font-family:monospace; color:#ffd54f;">docker build -t app:v1.0 .<br>docker images<br>docker rmi app:v1.0</td>
+          <td style="padding:10px;">Build image từ Dockerfile.<br>Liệt kê các image trên máy.<br>Xóa một image cụ thể.</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-          <td style="padding:10px 0; font-weight:600;">Containers</td>
-          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">docker run -d -p 80:80 app:v1</td>
-          <td style="padding:10px 0;">Khởi chạy container chạy ngầm và map port 80</td>
+          <td style="padding:10px; font-weight:600;">Khởi Chạy</td>
+          <td style="padding:10px; font-family:monospace; color:#ffd54f;">docker run -d -p 8080:80 --name web app:v1.0<br>docker ps -a<br>docker rm -f web</td>
+          <td style="padding:10px;">Khởi chạy container chạy ngầm, map port 8080 host sang 80 container.<br>Liệt kê tất cả các container.<br>Xóa bỏ container ngay lập tức.</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-          <td style="padding:10px 0; font-weight:600;">Debugging</td>
-          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">docker logs -f --tail 100 app</td>
-          <td style="padding:10px 0;">Xem 100 dòng logs cuối và theo dõi real-time</td>
+          <td style="padding:10px; font-weight:600;">Giám Sát & Debug</td>
+          <td style="padding:10px; font-family:monospace; color:#ffd54f;">docker logs -f --tail 100 web<br>docker exec -it web sh<br>docker stats web</td>
+          <td style="padding:10px;">Xem logs real-time với 100 dòng cuối cùng.<br>Mở shell chui vào bên trong container.<br>Xem dung lượng CPU, RAM thực tế container đang chiếm dụng.</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-          <td style="padding:10px 0; font-weight:600;">Interactions</td>
-          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">docker exec -it app sh</td>
-          <td style="padding:10px 0;">Mở terminal shell tương tác trực tiếp vào container</td>
+          <td style="padding:10px; font-weight:600;">Mạng & Ổ Đĩa</td>
+          <td style="padding:10px; font-family:monospace; color:#ffd54f;">docker network ls<br>docker volume ls<br>docker inspect web</td>
+          <td style="padding:10px;">Liệt kê danh sách mạng.<br>Liệt kê các volume.<br>Xem toàn bộ thông tin chi tiết cấu hình JSON của container.</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-          <td style="padding:10px 0; font-weight:600;">Cleanup</td>
-          <td style="padding:10px 0; font-family:monospace; color:#ffd54f;">docker system prune -a --volumes</td>
-          <td style="padding:10px 0;">Dọn dẹp Disk: xóa container dừng, image rác và volumes thừa</td>
+          <td style="padding:10px; font-weight:600;">Dọn Dẹp Đĩa</td>
+          <td style="padding:10px; font-family:monospace; color:#ffd54f;">docker system prune -a --volumes</td>
+          <td style="padding:10px;">Quét sạch toàn bộ container đã dừng, image không dùng và volume mồ côi để giải phóng ổ cứng máy host.</td>
         </tr>
       </tbody>
     </table>
@@ -1042,10 +1057,630 @@ spec:
   `
 };
 
+const guideContentDeep = {
+  'docker-concepts': `
+    <div class="guide-card-tag" style="color:#ffb74d;border-color:rgba(255,183,77,0.3);margin-bottom:0.8rem">SENIOR DEEP-DIVE</div>
+    <h2>Kiến Trúc Nhân Docker & Cơ Chế Cách Ly Hệ Điều Hành Ở Cấp Độ Kernel</h2>
+    <p class="guide-subtitle">Đọc hiểu sâu về Container Runtimes (runc, containerd), Linux Namespaces, cgroups v2, OverlayFS internals và cấu hình bảo mật nâng cao.</p>
+
+    <div class="guide-section-title">⚙️ 1. Đi Sâu Vào Container Runtime Engine: OCI Specification, runc & containerd</div>
+    <p>Khi bạn thực thi lệnh \`docker run\`, Docker không tự khởi chạy container mà ủy quyền qua một chuỗi các runtime phân lớp theo chuẩn **OCI (Open Container Initiative)**:</p>
+    
+    <div class="thesis-quote">
+      <strong>Kiến trúc phân lớp:</strong> Docker Client ➔ dockerd ➔ containerd ➔ containerd-shim ➔ runc ➔ Container Process (PID 1)
+    </div>
+    
+    <ul>
+      <li><strong>dockerd (Docker Daemon):</strong> Đóng vai trò là REST API server cấp cao. Nó nhận lệnh từ client, quản lý xác thực, sinh UUID cho container, chuẩn bị các thông số mạng (networks), ổ đĩa (volumes) và chuyển tiếp yêu cầu sang **containerd** qua gRPC.</li>
+      <li><strong>containerd (High-Level Runtime):</strong> Dự án thuộc CNCF quản lý vòng đời container ở mức trừu tượng: pull/push images, giám sát trạng thái của các shim, phân phối tài nguyên lưu trữ. containerd gọi **runc** để thực thi việc tạo container.</li>
+      <li><strong>runc (Low-Level Runtime):</strong> Công cụ CLI gọn nhẹ tuân thủ OCI. Nó trực tiếp tương tác với Linux Kernel bằng các system calls để thiết lập Namespaces, cgroups cho container, chạy tiến trình chính của ứng dụng và tự hủy/biến mất sau khi tiến trình chạy ổn định.</li>
+      <li><strong>containerd-shim:</strong> Tiến trình đệm cực kỳ quan trọng. Nó đứng giữa containerd và runc. Shim hoạt động như một tiến trình cha (Parent Process) giữ cho các File Descriptors (stdin, stdout, stderr) mở ngay cả khi **dockerd** hoặc **containerd** bị khởi động lại hoặc nâng cấp. Điều này giúp hệ thống cập nhật Docker engine mà các container đang chạy **không bị downtime** (Live Restore).</li>
+    </ul>
+
+    <div class="guide-section-title">🔒 2. Cơ Chế Cô Lập: Linux Kernel Namespaces Internals</div>
+    <p>Docker container bản chất không phải máy ảo, nó chỉ là một tiến trình thường chạy trên Host OS nhưng bị giới hạn góc nhìn thông qua 7 Linux Kernel Namespaces được tạo ra bởi lệnh gọi hệ thống \`clone()\` hoặc \`unshare()\`:</p>
+    <ul>
+      <li><strong>PID Namespace (Process ID):</strong> Cách ly tiến trình. Tiến trình chính của container nhìn thấy mình là **PID 1** (giống như tiến trình init hệ thống), nhưng ngoài máy host, nó thực chất chỉ là một tiến trình thường có PID ngẫu nhiên (ví dụ: PID 28439). Điều này ngăn container can thiệp vào các tiến trình khác trên VPS host.</li>
+      <li><strong>NET Namespace (Network):</strong> Tạo card mạng ảo riêng biệt (\`veth-pair\`), bảng định tuyến (routing tables) và cấu hình tường lửa (iptables) riêng.</li>
+      <li><strong>MNT Namespace (Mount):</strong> Cung cấp một view mount point hệ thống tệp tin cô lập. Tiến trình bên trong container chỉ nhìn thấy root filesystem ảo của nó (\`/\`) mà không thể truy cập các thư mục khác ngoài máy host trừ khi được mount cụ thể.</li>
+      <li><strong>IPC Namespace (Inter-Process Communication):</strong> Ngăn các tiến trình trong container giao tiếp trực tiếp với các tiến trình bên ngoài qua bộ nhớ chia sẻ (Shared Memory, POSIX message queues).</li>
+      <li><strong>UTS Namespace (UNIX Timesharing System):</strong> Cho phép container có hostname và domain name riêng biệt.</li>
+      <li><strong>USER Namespace:</strong> Ánh xạ User ID và Group ID (UID/GID) bên trong container ra máy host. Ví dụ: User root (UID 0) bên trong container được ánh xạ ra User thường (UID 10001) ngoài host. Ngăn chặn nguy cơ chiếm quyền điều khiển host OS khi container bị hack.</li>
+      <li><strong>CGROUP Namespace:</strong> Cô lập góc nhìn về các Control Groups ảo, giúp tiến trình không thể đọc thông tin cgroup của các tiến trình ngoài.</li>
+    </ul>
+
+    <div class="guide-section-title">📊 3. Giới Hạn Tài Nguyên Hệ Thống: cgroups v1 vs cgroups v2</div>
+    <p>**cgroups (Control Groups)** là cơ chế giới hạn, kiểm soát lượng tài nguyên phần cứng (CPU, Memory, Disk I/O, PIDs) mà một container được phép sử dụng:</p>
+    <ul>
+      <li><strong>cgroups v1:</strong> Cấu trúc đa phân cấp (multiple hierarchies). Mỗi controller (như memory, cpu) được quản lý độc lập. Gây ra hiện tượng tranh chấp tài nguyên và đồng bộ hóa rất khó khăn giữa các nhóm tài nguyên khác nhau.</li>
+      <li><strong>cgroups v2 (Linux Kernel 4.5+):</strong> Gom tất cả các controllers vào một cây phân cấp duy nhất (Unified Hierarchy). Giúp kiểm soát tài nguyên cực kỳ chính xác. Ví dụ, khi bộ nhớ cạn kiệt, cgroups v2 kích hoạt OOM (Out of Memory) Killer chính xác lên container vi phạm mà không gây ảnh hưởng đến host OS hoặc container lân cận.</li>
+    </ul>
+    <p>Ví dụ thiết lập giới hạn CPU và Memory cho container bằng CLI:</p>
+    <div class="cmd-block"># Giới hạn container dùng tối đa 1.5 CPU cores và 512MB RAM, tắt swap memory
+docker run -d \\
+  --name production-api \\
+  --cpus="1.5" \\
+  --memory="512m" \\
+  --memory-swap="512m" \\
+  -p 8080:8080 \\
+  my-api:v1.0</div>
+
+    <div class="guide-section-title">📂 4. Phân Tích Sâu Storage Driver: Cơ Chế Hoạt Động Của Overlay2</div>
+    <p>**Overlay2** là driver lưu trữ tiêu chuẩn hiện nay trên Linux. Nó kết hợp hai thư mục trên host để tạo ra một view duy nhất (Union Mount):</p>
+    <ul>
+      <li><strong>lowerdir:</strong> Các thư mục chỉ đọc (Read-only layers) đại diện cho các layer của Docker Image gốc.</li>
+      <li><strong>upperdir:</strong> Thư mục có quyền ghi (Read-write layer) đại diện cho Container Layer. Tất cả dữ liệu mới ghi vào container sẽ nằm ở đây.</li>
+      <li><strong>merged:</strong> Thư mục hợp nhất (Union Mount point). Đây chính là cái mà container thực sự nhìn thấy khi chạy.</li>
+      <li><strong>workdir:</strong> Thư mục làm việc nội bộ của OverlayFS dùng để chuẩn bị các thay đổi (chẳng hạn như Copy-on-Write) trước khi ghi đè vào upperdir.</li>
+    </ul>
+    
+    <div class="thesis-quote">
+      <strong>OOM & CoW Performance Penalty:</strong> Nếu ứng dụng của bạn liên tục ghi đè các file lớn có sẵn trong \`lowerdir\` (ví dụ: file DB sqlite 2GB), Docker phải copy toàn bộ file 2GB đó lên \`upperdir\` trước khi sửa đổi. Điều này gây thắt nút cổ chai I/O. **Giải pháp:** Luôn sử dụng Docker Volumes cho dữ liệu động!
+    </div>
+
+    <div class="guide-section-title">🛡️ 5. Bảo Mật Container Nâng Cao (Hardening Production Containers)</div>
+    <p>Để bảo vệ hệ thống VPS khỏi các cuộc tấn công container breakout, ta áp dụng 3 kỹ thuật bảo mật cốt lõi:</p>
+    <ul>
+      <li><strong>1. Capability Dropping:</strong> Mặc định root user trong container có khoảng 14 capabilities (quyền quản trị nhân). Ta nên loại bỏ tất cả và chỉ giữ lại quyền tối thiểu cần thiết:
+        <div class="cmd-block"># Bỏ tất cả quyền quản trị nhân, chỉ cho phép bind port dưới 1024
+docker run -d \\
+  --cap-drop=ALL \\
+  --cap-add=NET_BIND_SERVICE \\
+  nginx:alpine</div>
+      </li>
+      <li><strong>2. Read-Only Root Filesystem:</strong> Chặn việc ghi file độc hại vào container bằng cách khóa cứng root filesystem, và chỉ mở ghi ở các thư mục tạm:
+        <div class="cmd-block">docker run -d \\
+  --read-only \\
+  --tmpfs /tmp \\
+  --tmpfs /var/cache/nginx \\
+  -p 80:80 \\
+  nginx:alpine</div>
+      </li>
+      <li><strong>3. Syscall Filtering (Seccomp Profiles):</strong> Seccomp chặn các cuộc gọi hệ thống nguy hiểm trực tiếp lên Linux kernel. Docker có một profile mặc định chặn khoảng 44 syscalls nguy hiểm (như \`reboot\`, \`keyctl\`).</li>
+    </ul>
+
+    <div class="guide-section-title">🛠️ 6. Scripting Nâng Cao & Go-Template Filtering</div>
+    <p>Trong tự động hóa DevOps, việc parse JSON từ \`docker inspect\` bằng \`jq\` rất phổ biến, nhưng Docker CLI có hỗ trợ sẵn **Go-Template** trực tiếp cực kỳ mạnh mẽ:</p>
+    <div class="cmd-block"># 1. Trích xuất địa chỉ IP chính xác của container 'web-app'
+docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' web-app
+
+# 2. Liệt kê các port đã binding ra ngoài máy host của container
+docker inspect --format '{{range $p, $conf := .NetworkSettings.Ports}}{{range $conf}}{{.HostPort}}{{end}}{{end}}' web-app
+
+# 3. Liệt kê dung lượng đĩa thực tế của từng container đang chạy
+docker system df -v</div>
+  `,
+
+  'docker-watchtower': `
+    <div class="guide-card-tag" style="color:#ffb74d;border-color:rgba(255,183,77,0.3);margin-bottom:0.8rem">SENIOR DEEP-DIVE</div>
+    <h2>Compose DRY, Profiles & Thiết Lập Private Registry</h2>
+    <p class="guide-subtitle">Nâng cao hiệu quả quản trị multi-container với Compose Anchors, Extends, Profiles và dựng Docker Registry nội bộ.</p>
+
+    <div class="guide-section-title">⚡ 1. Kỹ thuật YAML Anchors (&) & Aliases (*) trong Docker Compose</div>
+    <p>Khi file compose của bạn phình to với 10+ microservices, việc lặp lại cấu hình logs, env, network sẽ dẫn đến lỗi bảo trì. Hãy dùng Anchors để định nghĩa một lần và Alias để tái sử dụng:</p>
+    
+    <div class="cmd-block">version: '3.8'
+
+# 1. Định nghĩa template chung dùng làm anchor
+x-logging-template: &default-logging
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "50m"
+      max-file: "3"
+
+x-env-template: &default-env
+  environment:
+    NODE_ENV: production
+    DB_PORT: 5432
+
+services:
+  api-service:
+    image: company/api:latest
+    <<: *default-logging   # Kế thừa cấu hình logging
+    <<: *default-env       # Kế thừa biến môi trường
+    ports:
+      - "3000:3000"
+
+  worker-service:
+    image: company/worker:latest
+    <<: *default-logging
+    <<: *default-env
+    environment:
+      # Override hoặc bổ sung biến riêng biệt
+      - WORKER_THREADS=4</div>
+
+    <div class="guide-section-title">⚙️ 2. Chia môi trường bằng Docker Compose Profiles</div>
+    <p>Profiles giúp bạn chạy các container tùy chỉnh trong cùng một file mà không cần tách nhiều file. Ví dụ chạy stack Dev/Prod hoặc thêm container Monitor chỉ khi cần thiết:</p>
+    <div class="cmd-block">services:
+  app:
+    image: my-app
+    ports:
+      - "80:80"
+
+  db-adminer:
+    image: adminer
+    profiles:
+      - debug # Chỉ khởi chạy khi gọi profile debug
+    ports:
+      - "8080:8080"</div>
+    <p>Chạy bình thường: \`docker compose up -d\`. Chạy cả debug tool: \`docker compose --profile debug up -d\`.</p>
+
+    <div class="guide-section-title">🐳 3. Triển khai Local Private Registry riêng biệt</div>
+    <p>Để lưu trữ image bảo mật trong mạng nội bộ công ty mà không cần đẩy lên Docker Hub public, ta tự dựng một Registry:</p>
+    <div class="cmd-block"># Chạy registry container bảo mật qua SSL
+docker run -d \\
+  -p 5000:5000 \\
+  --restart=always \\
+  --name local-registry \\
+  -v /opt/registry/certs:/certs \\
+  -v /opt/registry/data:/var/lib/registry \\
+  -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/domain.crt \\
+  -e REGISTRY_HTTP_TLS_KEY=/certs/domain.key \\
+  registry:2</div>
+  `,
+
+  'docker-opt': `
+    <div class="guide-card-tag" style="color:#ffb74d;border-color:rgba(255,183,77,0.3);margin-bottom:0.8rem">SENIOR DEEP-DIVE</div>
+    <h2>Hardening Bảo Mật Container & Build Multi-Arch với Buildx</h2>
+    <p class="guide-subtitle">Đưa container về trạng thái Read-Only rootfs, chặn Syscalls bằng Seccomp và build image cho ARM64/AMD64.</p>
+
+    <div class="guide-section-title">🔒 1. Chế độ Read-Only Root Filesystem & Drop Capabilities</div>
+    <p>Nếu hacker khai thác lỗi RCE (Remote Code Execution) của app, chúng sẽ cố cài thêm mã độc hoặc modify mã nguồn. Ta có thể khóa hoàn toàn đĩa của container bằng cờ \`--read-only\` và chỉ mở các thư mục ghi log/cache dạng bộ nhớ ảo \`tmpfs\`:</p>
+    
+    <div class="cmd-block"># Chạy container an toàn tuyệt đối
+docker run -d \\
+  --name secure-app \\
+  --read-only \\
+  --tmpfs /tmp \\
+  --tmpfs /run \\
+  --tmpfs /var/cache/nginx \\
+  -p 80:80 \\
+  nginx:alpine</div>
+
+    <p>Hạ nhân Linux cấp quyền (Capabilities) tối thiểu cho tiến trình trong container. Mặc định Docker bật nhiều quyền, ta nên drop sạch và chỉ thêm lại những quyền thực sự cần thiết:</p>
+    <div class="cmd-block"># Drop toàn bộ quyền của root, chỉ cho phép bind port dưới 1024
+docker run -d \\
+  --cap-drop=ALL \\
+  --cap-add=NET_BIND_SERVICE \\
+  -p 80:80 \\
+  nginx:alpine</div>
+
+    <div class="guide-section-title">🛡️ 2. Hạn chế syscalls nhân Linux với Seccomp (Secure Computing Mode)</div>
+    <p>Seccomp lọc các lệnh gọi hệ thống (syscalls) từ container gửi tới nhân. Bạn có thể định nghĩa profile seccomp dạng JSON để cấm container gọi các lệnh nguy hiểm như \`reboot\`, \`mount\`, \`ptrace\`:</p>
+    <div class="cmd-block"># Chạy container với custom seccomp profile
+docker run --security-opt seccomp=/path/to/seccomp-profile.json my-app</div>
+
+    <div class="guide-section-title">⚡ 3. Biên dịch Multi-Architecture Image với Docker Buildx</div>
+    <p>Khi dev chạy chip Apple M1/M2/M3 (ARM64) nhưng server chạy chip Intel/AMD (AMD64), build image thông thường sẽ gây lỗi \`exec format error\`. Buildx giải quyết việc này bằng giả lập QEMU:</p>
+    <div class="cmd-block"># Khởi tạo buildx driver
+docker buildx create --name multi-builder --use
+docker buildx inspect --bootstrap
+
+# Tiến hành build và push đồng thời cả 2 bản build AMD64 và ARM64 lên hub
+docker buildx build \\
+  --platform linux/amd64,linux/arm64 \\
+  -t username/my-app:v1.0.0 \\
+  --push .</div>
+  `,
+
+  'cicd-github': `
+    <div class="guide-card-tag" style="color:#ffb74d;border-color:rgba(255,183,77,0.3);margin-bottom:0.8rem">SENIOR DEEP-DIVE</div>
+    <h2>GitHub Actions Nâng Cao: Reusable Workflows & Composite Actions</h2>
+    <p class="guide-subtitle">Tối ưu hóa cấu trúc CI/CD quy mô lớn, tái sử dụng workflow và viết kịch bản cài đặt tự động self-hosted runner.</p>
+
+    <div class="guide-section-title">⚙️ 1. Reusable Workflows vs Composite Actions</div>
+    <ul>
+      <li><strong>Composite Actions:</strong> Gom nhiều bước chạy (\`steps\`) nhỏ liên tiếp vào một file riêng để tái sử dụng. Thích hợp để chuẩn hóa một quy trình cài đặt môi trường (VD: Setup Node + cài pnpm + login registry).</li>
+      <li><strong>Reusable Workflows:</strong> Tái sử dụng cả một file workflow hoàn chỉnh (\`job\` cấu hình hoàn thiện). Thích hợp để chuẩn hóa luồng Build/Deploy chung cho hàng trăm repositories khác nhau trong tổ chức.</li>
+    </ul>
+
+    <div class="guide-section-title">📝 Ví dụ Reusable Deploy Workflow (.github/workflows/reusable-deploy.yml)</div>
+    <div class="cmd-block">name: Reusable Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      image-tag:
+        required: true
+        type: string
+    secrets:
+      SSH_KEY:
+        required: true
+      HOST:
+        required: true
+      USER:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: \${{ secrets.HOST }}
+          username: \${{ secrets.USER }}
+          key: \${{ secrets.SSH_KEY }}
+          script: |
+            export DEPLOY_ENV="\${{ inputs.environment }}"
+            cd /www/my-app
+            docker compose pull
+            docker compose up -d</div>
+
+    <p>Khi đó trong repo dự án cụ thể, ta chỉ cần gọi đơn giản:</p>
+    <div class="cmd-block">jobs:
+  call-deploy:
+    uses: my-org/shared-workflows/.github/workflows/reusable-deploy.yml@main
+    with:
+      environment: production
+      image-tag: \${{ github.sha }}
+    secrets: inherit # Tự động truyền toàn bộ secrets sang workflow con</div>
+
+    <div class="guide-section-title">🚀 2. Tự động hóa cài đặt Self-hosted Runner trên VPS</div>
+    <p>Nếu bạn muốn chạy CI/CD trên máy chủ VPS riêng thay vì dùng máy của GitHub (để build nhanh hơn và truy cập mạng nội bộ), hãy chạy shell script sau để tự động hóa đăng ký runner:</p>
+    <div class="cmd-block"># Tạo thư mục và tải runner agent
+mkdir actions-runner && cd actions-runner
+curl -o actions-runner-linux-x64-3.216.0.tar.gz -L https://github.com/actions/runner/releases/download/v3.216.0/actions-runner-linux-x64-3.216.0.tar.gz
+tar xzf ./actions-runner-linux-x64-3.216.0.tar.gz
+
+# Cấu hình runner bằng token động từ GitHub API (Thay thế token thực của dự án)
+./config.sh --url https://github.com/huy293/devops-flowchart --token RUNNER_REGISTRATION_TOKEN --unattended
+
+# Cài đặt làm service chạy ngầm
+sudo ./svc.sh install
+sudo ./svc.sh start</div>
+  `,
+
+  'cicd-gitlab': `
+    <div class="guide-card-tag" style="color:#ffb74d;border-color:rgba(255,183,77,0.3);margin-bottom:0.8rem">SENIOR DEEP-DIVE</div>
+    <h2>GitLab Pipelines Quy Mô Lớn & Hardening Runner</h2>
+    <p class="guide-subtitle">Thiết lập Dynamic Parent-Child pipelines và cấu hình bảo mật tệp cấu hình Runner config.toml.</p>
+
+    <div class="guide-section-title">⚙️ 1. Dynamic Parent-Child Pipelines</div>
+    <p>Với cấu trúc dự án Monorepo (chứa nhiều dự án nhỏ Web, API, Worker trong cùng 1 Git), việc chạy một file cấu hình GitLab CI dài vài nghìn dòng là một ác mộng. GitLab hỗ trợ Dynamic Trigger: Tự động chạy một script tạo ra file YAML tùy chỉnh và trigger file đó chạy:</p>
+    
+    <div class="cmd-block"># .gitlab-ci.yml chính
+stages:
+  - generate
+  - trigger
+
+generate-pipeline:
+  stage: generate
+  image: python:3.11-slim
+  script:
+    - python generate-ci-yaml.py # Script tự tạo file child-pipeline.yml dựa trên code thay đổi
+  artifacts:
+    paths:
+      - child-pipeline.yml
+
+trigger-pipeline:
+  stage: trigger
+  needs: generate-pipeline
+  trigger:
+    include:
+      - artifact: child-pipeline.yml
+        job: generate-pipeline
+    strategy: depend</div>
+
+    <div class="guide-section-title">🔒 2. Cấu hình bảo mật hệ thống Runner (/etc/gitlab-runner/config.toml)</div>
+    <p>Nếu không cấu hình chặt chẽ, các nhà phát triển dự án có thể ghi đè lệnh vào Docker socket và phá hoại máy chủ vật lý. Hãy chỉnh sửa file cấu hình Runner:</p>
+    <div class="cmd-block">[[runners]]
+  name = "secure-vps-runner"
+  url = "https://gitlab.com/"
+  id = 1
+  token = "RUNNER_SECURE_TOKEN"
+  executor = "docker"
+  [runners.custom_build_dir]
+  [runners.cache]
+    MaxUploadedArchiveSize = 104857600 # Giới hạn cache tối đa 100MB
+  [runners.docker]
+    tls_verify = false
+    image = "docker:24.0.5"
+    privileged = false # Tắt chế độ privileged bảo mật tuyệt đối
+    # Chỉ mount socket ở chế độ chỉ đọc hoặc hạn chế
+    volumes = ["/cache"]
+    shm_size = 2147483648 # Gán dung lượng RAM tối đa cho build cgroup (/dev/shm)
+    allowed_images = ["node:*", "python:*", "golang:*", "docker:*"] # Chỉ cho phép dùng các base image này</div>
+  `,
+
+  'git-ssh': `
+    <div class="guide-card-tag" style="color:#ffb74d;border-color:rgba(255,183,77,0.3);margin-bottom:0.8rem">SENIOR DEEP-DIVE</div>
+    <h2>SSH Multiplexing, Agent Forwarding & Ký Commit Với SSH</h2>
+    <p class="guide-subtitle">Định cấu hình SSH Multiplexing tăng tốc độ git 5 lần, forwarding key an toàn và ký số định danh lập trình viên.</p>
+
+    <div class="guide-section-title">⚡ 1. Tăng tốc Git với SSH Multiplexing</div>
+    <p>Mỗi khi git pull/push, SSH client phải khởi tạo kết nối TCP mới, bắt tay bảo mật (SSH Handshake) mất từ 1-3 giây. Cấu hình Multiplexing giúp duy trì một phiên kết nối SSH duy nhất chạy ngầm và định tuyến toàn bộ traffic Git tiếp theo qua đó:</p>
+    
+    <div class="cmd-block"># Mở file ~/.ssh/config và thêm vào đầu file:
+Host *
+  ControlMaster auto
+  ControlPath ~/.ssh/sockets/%r@%h:%p
+  ControlPersist 10m # Duy trì kết nối ngầm trong 10 phút sau khi idle</div>
+    <p>Tạo thư mục sockets để lưu phiên kết nối: \`mkdir -p ~/.ssh/sockets\`. Bây giờ tốc độ git command tiếp theo sẽ diễn ra gần như tức thì.</p>
+
+    <div class="guide-section-title">🔒 2. SSH Agent Forwarding an toàn</div>
+    <p>Khi bạn cần SSH từ máy local vào VPS-A, rồi từ VPS-A cần clone code riêng từ GitHub. Thay vì copy SSH key của máy local và lưu trực tiếp trên VPS-A (Cực kỳ không an toàn), ta bật Forwarding để VPS-A "mượn tạm" key local để kết nối sang GitHub:</p>
+    <div class="cmd-block"># Trong máy local: Thêm key vào ssh-agent
+eval $(ssh-agent -s)
+ssh-add ~/.ssh/id_ed25519_personal
+
+# Trong file config ~/.ssh/config local:
+Host vps-host-alias
+  HostName 123.45.67.89
+  User ubuntu
+  ForwardAgent yes # Bật tính năng chuyển tiếp key</div>
+
+    <div class="guide-section-title">✍️ 3. Ký số Commit bằng SSH Key thay thế GPG Key</div>
+    <p>Giờ đây bạn không cần cài đặt GPG phức tạp để được tích xanh Verified trên GitHub/GitLab. Bạn có thể dùng chính SSH key hiện tại:</p>
+    <div class="cmd-block"># Cấu hình git dùng SSH để ký commit
+git config --global gpg.format ssh
+git config --global user.signingkey ~/.ssh/id_ed25519_personal.pub
+
+# Bật tự động ký commit cho mọi repos
+git config --global commit.gpgsign true</div>
+  `,
+
+  'k8s-core': `
+    <div class="guide-card-tag" style="color:#ffb74d;border-color:rgba(255,183,77,0.3);margin-bottom:0.8rem">SENIOR DEEP-DIVE</div>
+    <h2> Admission Controllers & Cơ Chế Định Tuyến Pod Chuyên Sâu</h2>
+    <p class="guide-subtitle">Hiểu sâu cơ chế kiểm soát của API Server, Raft consensus và kiểm soát phân phối Pod qua Affinity.</p>
+
+    <div class="guide-section-title">☸️ 1. Pipeline của kube-apiserver: Admission Controllers</div>
+    <p>Khi một request tạo Pod gửi tới API Server, nó phải đi qua 3 giai đoạn của bộ kiểm soát Admission Control:</p>
+    <ol>
+      <li><strong>Authentication & Authorization:</strong> Xác thực thông tin qua TLS/Token và phân quyền qua RBAC.</li>
+      <li><strong>Mutating Admission Webhooks:</strong> Cho phép can thiệp và tự động sửa đổi nội dung YAML. Ví dụ: Istio Sidecar injector tự động chèn thêm container \`istio-proxy\` vào Pod của bạn.</li>
+      <li><strong>Object Schema Validation:</strong> Xác thực định dạng cấu hình chuẩn quy định của Kubernetes.</li>
+      <li><strong>Validating Admission Webhooks:</strong> Cho phép kiểm duyệt nghiêm ngặt. Ví dụ: Kiểm tra nếu Pod chạy bằng user root thì từ chối không cho deploy lên cluster.</li>
+    </ol>
+
+    <div class="guide-section-title">⚙️ 2. Cơ chế đồng thuận Raft trong etcd</div>
+    <p>etcd lưu trữ toàn bộ trạng thái của K8s. Nó sử dụng thuật toán đồng thuận Raft. Cụm etcd tối ưu nhất phải có số node lẻ (3, 5, 7) để đạt được sự đồng thuận đa số. Nếu cụm 3 node bị sập mất 1 node (còn 2), nó vẫn hoạt động; nhưng nếu sập 2 node, cụm etcd sẽ mất tính năng write để bảo vệ tính nhất quán dữ liệu (Split-brain prevention).</p>
+
+    <div class="guide-section-title">🚀 3. Kỹ thuật phân tán Pod Nâng cao: Node & Pod Affinity</div>
+    <p>Để đảm bảo độ tin cậy, ta cấm chạy 2 Pod của cùng một microservice trên cùng 1 worker node vật lý (để đề phòng node sập thì không chết sạch service). Hãy dùng **PodAntiAffinity**:</p>
+    
+    <div class="cmd-block">spec:
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - microservice-web
+        topologyKey: "kubernetes.io/hostname"</div>
+
+    <p>Để chỉ định Pod chạy trên các server đặc chủng (Ví dụ server có ổ SSD tốc độ cao hoặc GPU):</p>
+    <div class="cmd-block">spec:
+  tolerations:
+  - key: "hardware-type"
+    operator: "Equal"
+    value: "gpu"
+    effect: "NoSchedule"
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: gpu-installed
+            operator: In
+            values:
+            - "true"</div>
+  `,
+
+  'k8s-config': `
+    <div class="guide-card-tag" style="color:#ffb74d;border-color:rgba(255,183,77,0.3);margin-bottom:0.8rem">SENIOR DEEP-DIVE</div>
+    <h2>eBPF Network, RBAC & Hạn Chế Phân Quyền Pod Security</h2>
+    <p class="guide-subtitle">Đưa mạng K8s từ iptables sang eBPF Cilium, phân quyền phân cấp RBAC và thực thi Pod Security Standards.</p>
+
+    <div class="guide-section-title">⚡ 1. eBPF Network (Cilium/Calico) vs iptables truyền thống</div>
+    <p>Mặc định, K8s điều phối định tuyến qua kube-proxy sử dụng **iptables**. Iptables hoạt động bằng cách quét tuyến tính tuần tự qua danh sách các rule mạng từ trên xuống dưới. Khi số lượng pod lên tới hàng nghìn, việc quét này ngốn cực nhiều CPU của server.
+    <br>**Cilium (eBPF)** giải quyết triệt để lỗi này bằng cách nhúng mã trực tiếp vào kernel space. Traffic đi thẳng từ veth này sang veth kia mà không cần thông qua iptables rules, tăng tốc độ xử lý mạng và giảm 90% hao phí CPU.</p>
+
+    <div class="guide-section-title">🔑 2. Cấu hình phân cấp RBAC chặt chẽ (Role-Based Access Control)</div>
+    <p>Nguyên tắc tối thiểu đặc quyền: Tuyệt đối không cho phép các ứng dụng dùng ServiceAccount mặc định có quyền admin cluster. Ta tạo Role chỉ có quyền đọc logs và binding riêng biệt:</p>
+    <div class="cmd-block">apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: production
+  name: pod-log-reader
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-logs-binding
+  namespace: production
+subjects:
+- kind: ServiceAccount
+  name: my-app-serviceaccount # Tài khoản gán cho Pod ứng dụng
+  namespace: production
+roleRef:
+  kind: Role
+  name: pod-log-reader
+  apiGroup: rbac.authorization.k8s.io</div>
+
+    <div class="guide-section-title">🛡️ 3. Thực thi Pod Security Standards (PSS) cấp Restricted</div>
+    <p>Để đảm bảo không có pod nào có thể phá hoại node vật lý, ta gán nhãn bắt buộc Namespace chạy chế độ Restricted của Kubernetes:</p>
+    <div class="cmd-block">kubectl label --overwrite ns production pod-security.kubernetes.io/enforce=restricted</div>
+    <p>Chế độ Restricted sẽ tự động từ chối chạy bất kỳ Pod nào có cấu hình bảo mật lỏng lẻo, ví dụ chạy bằng root, mount hostpath, hoặc gán đặc quyền.</p>
+  `,
+
+  'k8s-helm': `
+    <div class="guide-card-tag" style="color:#ffb74d;border-color:rgba(255,183,77,0.3);margin-bottom:0.8rem">SENIOR DEEP-DIVE</div>
+    <h2>Go-Template Functions, Sub-charts & Unit Testing Helm</h2>
+    <p class="guide-subtitle">Lập trình các hàm logic nâng cao trong Helm, quản lý cấu trúc sub-charts và chạy kiểm thử tự động Helm Chart.</p>
+
+    <div class="guide-section-title">⚙️ 1. Sử dụng Named Templates và Helper Functions</div>
+    <p>Để tránh lặp lại code trong templates, Helm cung cấp file \`templates/_helpers.tpl\` để khai báo các khối macro Go-template. Ta sử dụng cú pháp \`define\` và gọi lại bằng \`include\`:</p>
+    
+    <div class="cmd-block"># templates/_helpers.tpl
+{{- define "mychart.labels" -}}
+generator: helm
+deployed-by: devops-team
+app-version: {{ .Chart.AppVersion | quote }}
+{{- end -}}
+
+# templates/deployment.yaml
+metadata:
+  labels:
+    {{- include "mychart.labels" . | nindent 4 }}</div>
+
+    <div class="guide-section-title">🔄 2. Làm việc với Vòng Lặp (range) và Pipeline (|)</div>
+    <p>Ta có thể duyệt qua một list hoặc map khai báo trong file \`values.yaml\` để tự động sinh cấu hình. Ví dụ tạo các biến môi trường tự động:</p>
+    <div class="cmd-block"># values.yaml
+envVars:
+  DB_NAME: "production_db"
+  REDIS_PORT: "6379"
+  DEBUG: "false"
+
+# templates/deployment.yaml
+env:
+  {{- range $key, $val := .Values.envVars }}
+  - name: {{ $key }}
+    value: {{ $val | quote }}
+  {{- end }}</div>
+
+    <div class="guide-section-title">🧪 3. Unit Test Helm Chart với helm-unittest</div>
+    <p>Để đảm bảo file values cấu hình thay đổi không làm hỏng manifest sinh ra, ta viết test suite chạy kiểm thử tự động:</p>
+    <div class="cmd-block"># tests/deployment_test.yaml
+suite: test deployment manifest
+templates:
+  - deployment.yaml
+tests:
+  - it: should match replica count configured
+    set:
+      replicaCount: 5
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 5</div>
+    <p>Chạy lệnh test: \`helm unittest .\`.</p>
+  `,
+
+  'aapanel-proxy': `
+    <div class="guide-card-tag" style="color:#ffb74d;border-color:rgba(255,183,77,0.3);margin-bottom:0.8rem">SENIOR DEEP-DIVE</div>
+    <h2>Tối Ưu Hóa Nginx Buffers & Triển Khai HTTP/3 QUIC trên aaPanel</h2>
+    <p class="guide-subtitle">Định cấu hình máy chủ Nginx đạt mức tải hàng nghìn CCU, cấu hình proxy buffer tránh ghi đĩa và kích hoạt giao thức HTTP/3.</p>
+
+    <div class="guide-section-title">⚡ 1. Tối ưu hóa Nginx Core & Processors</div>
+    <p>aaPanel cấu hình mặc định Nginx cho các site tĩnh nhẹ. Khi kết nối ứng dụng API lớn, ta cần tinh chỉnh tệp cấu hình chính của Nginx (\`/www/server/nginx/conf/nginx.conf\`):</p>
+    
+    <div class="cmd-block">events {
+    worker_connections 20480; # Tăng số kết nối đồng thời trên mỗi worker
+    use epoll; # Sử dụng cơ chế epoll tối ưu trên Linux nhân
+    multi_accept on;
+}
+
+http {
+    # Tắt việc gửi token version của Nginx để bảo mật tránh scan OS vulnerability
+    server_tokens off;
+    
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    
+    # Cấu hình nén gzip nâng cao giảm 60% băng thông
+    gzip on;
+    gzip_comp_level 5;
+    gzip_types text/plain text/css application/json application/javascript text/xml;
+}</div>
+
+    <div class="guide-section-title">⚙️ 2. Tinh chỉnh Proxy Buffers (Tránh ghi đĩa cứng)</div>
+    <p>Mặc định, nếu Response trả về từ Docker Container quá lớn so với memory buffer của Nginx, Nginx sẽ tự tạo file tạm và ghi vào đĩa cứng (Disk I/O), làm tốc độ xử lý sụt giảm nghiêm trọng. Hãy tăng buffer để lưu toàn bộ trên RAM:</p>
+    <div class="cmd-block">proxy_buffering on;
+proxy_buffer_size 128k;
+proxy_buffers 4 256k;
+proxy_busy_buffers_size 256k;
+proxy_max_temp_file_size 0; # Cấm ghi file tạm xuống ổ đĩa cứng</div>
+
+    <div class="guide-section-title">🌐 3. Cấu hình HTTP/3 QUIC trên aaPanel</div>
+    <p>Giao thức HTTP/3 sử dụng UDP thay cho TCP giúp giảm tối đa độ trễ bắt tay mạng (Zero-RTT handshake). Hãy thêm cấu hình sau vào cấu hình site:</p>
+    <div class="cmd-block">server {
+    listen 443 quic reuseport; # Listen HTTP/3 UDP
+    listen 443 ssl http2;      # Listen HTTP/2 TCP
+    
+    # Quảng bá giao thức HTTP/3 ra trình duyệt
+    add_header Alt-Svc 'h3=":443"; ma=86400';
+    
+    ssl_protocols TLSv1.3; # HTTP/3 bắt buộc phải chạy TLS v1.3
+}</div>
+  `,
+
+  'aws-vpc': `
+    <div class="guide-card-tag" style="color:#ffb74d;border-color:rgba(255,183,77,0.3);margin-bottom:0.8rem">SENIOR DEEP-DIVE</div>
+    <h2>VPC Gateway Endpoints, Transit Gateway & Route 53 Routing Policies</h2>
+    <p class="guide-subtitle">Tối ưu hóa chi phí đường truyền AWS bằng VPC Endpoints và thiết lập định tuyến toàn cầu với Route 53.</p>
+
+    <div class="guide-section-title">💰 1. Cắt giảm 90% chi phí NAT Gateway bằng VPC Endpoints</div>
+    <p>Khi các EC2, ECS app nằm ở Private Subnet giao tiếp với Amazon S3 hoặc DynamoDB, mặc định dữ liệu sẽ chạy qua NAT Gateway ra Internet rồi mới tới S3, làm phát sinh chi phí truyền tải khổng lồ (NAT Gateway data processing fee ~ $0.045/GB).
+    <br>**VPC Gateway Endpoint** cho phép tạo một cổng định tuyến trực tiếp từ bên trong mạng nội bộ VPC tới S3/DynamoDB mà không đi qua NAT Gateway. Hoàn toàn bảo mật và **không mất phí**.</p>
+    
+    <div class="cmd-block"># Bảng Route Table của Private Subnet sau khi tích hợp S3 Gateway Endpoint:
+Destination      Target
+10.0.0.0/16      local       # Định tuyến nội bộ VPC
+pl-63a5400a      vpce-12345  # Toàn bộ traffic tới S3 đi qua Endpoint Gateway
+0.0.0.0/0        nat-98765   # Các traffic internet khác đi qua NAT Gateway</div>
+
+    <div class="guide-section-title">🌐 2. Quản lý mạng đa VPC với AWS Transit Gateway (TGW)</div>
+    <p>Khi tổ chức có nhiều VPC (VPC Dev, VPC Prod, VPC Test, Shared Services VPC). Thiết lập VPC Peering giữa các cặp mạng sẽ tạo ra cấu trúc mesh cực kỳ phức tạp khó quản trị.
+    <br>**Transit Gateway** đóng vai trò như một Cloud Router trung tâm, kết nối tất cả các VPC, VPN và hạ tầng On-premise vào một mối duy nhất, quản lý phân quyền routing thông qua Route Tables của Transit Gateway.</p>
+
+    <div class="guide-section-title">🗺️ 3. Các kịch bản Định tuyến của Route 53</div>
+    <ul>
+      <li><strong>Latency-based Routing:</strong> Tự động điều hướng người dùng tới Vùng (Region) AWS có độ trễ mạng thấp nhất đối với họ. Ví dụ người dùng VN sẽ đi về Singapore (ap-southeast-1), người dùng Mỹ về Northern Virginia (us-east-1).</li>
+      <li><strong>Geolocation Routing:</strong> Định tuyến dựa trên quốc gia của người dùng. Dùng để phân phối nội dung đa ngôn ngữ hoặc tuân thủ pháp luật sở tại (VD: GDPR châu Âu).</li>
+      <li><strong>Active-Passive Failover:</strong> Thiết lập hệ thống dự phòng thảm họa. Route 53 gửi health check liên tục tới Primary Server. Nếu sập, nó tự động đổi bản ghi DNS sang Backup Server (Passive) nằm ở region khác.</li>
+    </ul>
+  `,
+
+  'aws-compute': `
+    <div class="guide-card-tag" style="color:#ffb74d;border-color:rgba(255,183,77,0.3);margin-bottom:0.8rem">SENIOR DEEP-DIVE</div>
+    <h2>Autoscaling Karpenter, EKS IRSA & CloudFront Signed URLs</h2>
+    <p class="guide-subtitle">Đưa hạ tầng co giãn lên thế hệ mới với Karpenter, cấp quyền pod qua IRSA và bảo mật asset qua CloudFront Signed Cookies.</p>
+
+    <div class="guide-section-title">☸️ 1. Karpenter vs Cluster Autoscaler trong EKS</div>
+    <ul>
+      <li><strong>Cluster Autoscaler (Thế hệ cũ):</strong> Hoạt động phụ thuộc vào AWS Auto Scaling Groups (ASG). Khi Pod pending do thiếu tài nguyên, Autoscaler yêu cầu ASG nâng số EC2. Quy trình này chậm (mất 2-5 phút) và thiếu linh hoạt trong việc lựa chọn loại EC2 tối ưu.</li>
+      <li><strong>Karpenter (Thế hệ mới):</strong> Tương tác trực tiếp với AWS EC2 Fleet API bỏ qua ASG. Karpenter phân tích trực tiếp tài nguyên Pod yêu cầu (CPU, RAM, GPU) và tự động spawn đúng cấu hình EC2 phù hợp nhất chỉ trong **vài chục giây**, giúp giảm thiểu tối đa chi phí chạy máy chủ dư thừa.</li>
+    </ul>
+
+    <div class="guide-section-title">🔑 2. Cấp quyền ứng dụng bảo mật qua IRSA (IAM Roles for Service Accounts)</div>
+    <p>Không bao giờ được gán quyền trực tiếp cho EC2 node (NodeInstanceRole) vì tất cả các Pod chạy chung Node sẽ có chung quyền đó (vi phạm bảo mật). IRSA sử dụng OpenID Connect (OIDC) để map riêng biệt một IAM Role vào một ServiceAccount duy nhất của Kubernetes:</p>
+    
+    <div class="cmd-block">apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: s3-uploader-sa
+  namespace: production
+  annotations:
+    # Liên kết trực tiếp với IAM Role có quyền đọc/ghi S3 bucket tương ứng
+    eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/ProductionS3UploaderRole</div>
+
+    <div class="guide-section-title">📦 3. Bảo vệ Static Assets bằng CloudFront Signed URLs / Cookies</div>
+    <p>Khi bạn phân phối video khóa học trả phí hoặc tài liệu nội bộ qua CloudFront CDN. Bạn không thể mở public link S3. Ta cấu hình CloudFront kiểm tra chữ ký điện tử gửi kèm theo yêu cầu:</p>
+    <ol>
+      <li>Người dùng đăng nhập app thành công và yêu cầu xem tài liệu.</li>
+      <li>Backend xác thực thông tin, dùng khóa private key sinh ra một mã token chứa thời gian hết hạn (VD: link chỉ sống trong 1 giờ) và gán thành **Signed URL** hoặc lưu vào **Signed Cookies** ở trình duyệt.</li>
+      <li>Khi client gửi request lên CloudFront, CloudFront kiểm tra token. Nếu hợp lệ, nó sẽ trả về nội dung tĩnh từ bộ nhớ cache CDN; nếu không có token hoặc token hết hạn, trả về 403 Forbidden.</li>
+    </ol>
+  `
+};
+
 export default function Playbook() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeGuideId, setActiveGuideId] = useState(null);
+  const [detailTab, setDetailTab] = useState('basic'); // 'basic' | 'deep'
 
   const filteredGuides = guidesList.filter(g => {
     const matchesCategory = selectedCategory === 'all' || g.category === selectedCategory;
@@ -1101,10 +1736,36 @@ export default function Playbook() {
           <div className="playbook-main">
             {activeGuideId ? (
               <div className="guide-detail glass">
-                <button className="guide-detail-back" onClick={() => setActiveGuideId(null)}>
-                  ← Quay lại danh sách
-                </button>
-                <div dangerouslySetInnerHTML={{ __html: guideContent[activeGuideId] }} />
+                <div className="guide-detail-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '1.2rem' }}>
+                  <button className="guide-detail-back" style={{ marginBottom: 0 }} onClick={() => {
+                    setActiveGuideId(null);
+                    setDetailTab('basic');
+                  }}>
+                    ← Quay lại danh sách
+                  </button>
+                  
+                  <div className="guide-tabs-container">
+                    <button 
+                      className={`guide-tab-btn ${detailTab === 'basic' ? 'active' : ''}`}
+                      onClick={() => setDetailTab('basic')}
+                    >
+                      🟢 Cơ bản (Junior/Mid)
+                    </button>
+                    <button 
+                      className={`guide-tab-btn ${detailTab === 'deep' ? 'active' : ''}`}
+                      onClick={() => setDetailTab('deep')}
+                    >
+                      🔥 Chuyên sâu (Senior Deep-Dive)
+                    </button>
+                  </div>
+                </div>
+
+                <div 
+                  className="guide-html-content"
+                  dangerouslySetInnerHTML={{ 
+                    __html: detailTab === 'basic' ? guideContent[activeGuideId] : (guideContentDeep[activeGuideId] || '<p style="color: #a0aec0; padding: 2rem; text-align: center;">Nội dung chuyên sâu đang được cập nhật...</p>') 
+                  }} 
+                />
               </div>
             ) : (
               <div className="guides-grid">
@@ -1114,7 +1775,10 @@ export default function Playbook() {
                   </div>
                 ) : (
                   filteredGuides.map(g => (
-                    <div key={g.id} className="guide-card glass" onClick={() => setActiveGuideId(g.id)}>
+                    <div key={g.id} className="guide-card glass" onClick={() => {
+                      setActiveGuideId(g.id);
+                      setDetailTab('basic');
+                    }}>
                       <div className="guide-card-icon" style={{ background: g.iconBg, borderColor: g.iconBorder }}>
                         {g.icon}
                       </div>
