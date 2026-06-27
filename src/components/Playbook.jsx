@@ -1149,6 +1149,60 @@ docker inspect --format '{{range $p, $conf := .NetworkSettings.Ports}}{{range $c
 
 # 3. Liệt kê dung lượng đĩa thực tế của từng container đang chạy
 docker system df -v</div>
+
+    <div class="guide-section-title" style="color: #ff7043; border-bottom: 2px solid rgba(255,112,67,0.3)">🔥 7. Production Gotchas & Senior Experience: Những Cạm Bẫy Thực Chiến</div>
+    <p>Đây là những bài học "đau thương" trên môi trường sản xuất thực tế mà tài liệu Get Started của Docker không bao giờ nói cho bạn biết:</p>
+    
+    <ul>
+      <li style="margin-bottom: 1.5rem;">
+        <strong style="color: #ffb74d;">Gotcha #1: Thảm họa Zombie Process khi chạy trực tiếp làm PID 1</strong>
+        <br>Khi bạn viết Dockerfile kiểu: \`CMD ["node", "app.js"]\` hoặc \`CMD ["python", "app.py"]\`. Ứng dụng của bạn sẽ chạy với quyền **PID 1**.
+        <br>• *Cạm bẫy:* Trong Linux, PID 1 (init process) có nhiệm vụ cực kỳ quan trọng là dọn dẹp các tiến trình con mồ côi (Zombie processes) sau khi chúng kết thúc. Node.js hay Python không được thiết kế để làm nhiệm vụ của một init system. Hậu quả là sau một thời gian chạy, hệ thống của bạn sẽ tràn ngập Zombie processes, làm cạn kiệt Process Table khiến máy VPS không thể khởi tạo thêm tiến trình mới và crash hoàn toàn.
+        <br>• *Giải pháp:* Luôn dùng cờ \`--init\` khi chạy container (\`docker run --init ...\`) hoặc tích hợp công cụ init siêu nhẹ như **Tini** trực tiếp trong Dockerfile:
+        <div class="cmd-block"># Thêm tini vào Alpine Image
+RUN apk add --no-cache tini
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["node", "app.js"]</div>
+      </li>
+
+      <li style="margin-bottom: 1.5rem;">
+        <strong style="color: #ffb74d;">Gotcha #2: Ác mộng Latency do CPU Throttling (CFS Bandwidth Limit)</strong>
+        <br>Trong Kubernetes hoặc Docker Compose, ta thường đặt giới hạn CPU để tránh một container ngốn sạch tài nguyên của máy host (Ví dụ: \`resources.limits.cpu: "1.0"\`).
+        <br>• *Cạm bẫy:* Linux Kernel giới hạn CPU bằng cách chia thời gian thành các chu kỳ (CFS Period - thường là 100ms). Với giới hạn 1 CPU, container của bạn chỉ được chạy tối đa 100ms trong mỗi chu kỳ. Nếu ứng dụng của bạn là đa luồng (multi-threaded) và tiêu thụ hết 100ms này ngay trong 20ms đầu tiên của chu kỳ, nhân Linux sẽ **đông cứng (throttle)** hoàn toàn container trong 80ms còn lại! Điều này tạo ra các độ trễ cực lớn (Latency spikes) cho các API Request, mặc dù theo dõi tổng quan CPU máy host vẫn đang rảnh rỗi dưới 20%.
+        <br>• *Giải pháp:* Đối với các ứng dụng nhạy cảm về độ trễ, **không nên đặt giới hạn cứng CPU (Limits)**, thay vào đó chỉ nên cấu hình CPU Requests (hoặc dùng \`--cpu-shares\` trong Docker) để hệ thống tự phân phối động khi có tranh chấp, hoặc điều chỉnh số lượng threads của runtime khớp với CPU được cấp phát.
+      </li>
+
+      <li style="margin-bottom: 1.5rem;">
+        <strong style="color: #ffb74d;">Gotcha #3: VPS báo còn dư 100GB đĩa nhưng vẫn bị lỗi "No space left on device" (Cạn kiệt Inodes)</strong>
+        <br>Một buổi sáng, database của bạn sập, Docker báo lỗi ghi file do hết dung lượng, nhưng khi bạn chạy \`df -h\`, VPS vẫn báo còn trống hàng chục GB dung lượng lưu trữ.
+        <br>• *Cạm bẫy:* Trên hệ điều hành Linux, mỗi file hoặc thư mục được quản lý bởi một cấu trúc dữ liệu gọi là **Inode**. Khi bạn cài đặt các package nặng như \`node_modules\` chứa hàng triệu file nhỏ, hoặc Docker sinh quá nhiều cache layers trung gian không được dọn dẹp, bạn sẽ tiêu thụ hết sạch số lượng Inodes được cấp phát cho ổ đĩa trước khi tiêu thụ hết dung lượng GB.
+        <br>• *Giải pháp:* Chạy lệnh \`df -i\` để kiểm tra tỷ lệ sử dụng Inode. Nếu bị cạn kiệt, hãy chạy dọn dẹp hệ thống ngay lập tức:
+        <div class="cmd-block"># Dọn dẹp triệt để cache builds, images rác và containers đã dừng
+docker system prune -a --volumes -f</div>
+      </li>
+
+      <li style="margin-bottom: 1.5rem;">
+        <strong style="color: #ffb74d;">Gotcha #4: Nguy cơ Container Breakout chiếm quyền điều khiển VPS qua đặc quyền Privileged</strong>
+        <br>Đôi khi để tiện cấu hình mạng hoặc mount ổ đĩa, dev thường chạy container với cờ \`--privileged\`.
+        <br>• *Cạm bẫy:* Cờ này gỡ bỏ hoàn toàn mọi rào cản bảo mật của container, cho phép tiến trình bên trong container truy cập trực tiếp vào phần cứng máy host. Nếu hacker chiếm quyền kiểm soát container này qua một lỗ hổng ứng dụng, chúng chỉ cần thực hiện 3 dòng lệnh đơn giản để mount ổ đĩa thật của VPS host và ghi mã độc trực tiếp vào file crontab của VPS, từ đó chiếm hoàn toàn quyền kiểm soát VPS host chỉ trong vài giây.
+        <br>• *Giải pháp:* Tuyệt đối không dùng \`--privileged\` trên production. Thay vào đó, hãy chỉ cấp phát chính xác những quyền (capabilities) cụ thể cần dùng qua cờ \`--cap-add\`.
+      </li>
+
+      <li style="margin-bottom: 1.5rem;">
+        <strong style="color: #ffb74d;">Gotcha #5: Tối ưu Cache khi build Docker trên các CI/CD Remote Runner</strong>
+        <br>Khi build Docker cục bộ, Docker tận dụng cache cực tốt nên build rất nhanh. Nhưng trên GitHub Actions hoặc GitLab CI, mỗi job build chạy trên một máy ảo rỗng hoàn toàn, khiến Docker luôn phải tải lại base images và cài đặt dependencies từ đầu (Build mất 10-15 phút).
+        <br>• *Cạm bẫy:* Việc chạy \`docker build\` thông thường trên CI sẽ bỏ phí hoàn toàn tính năng caching của Docker.
+        <br>• *Giải pháp:* Sử dụng Docker Buildx kết hợp với **registry cache** (lưu cache trực tiếp lên Docker Registry) hoặc **GitHub Actions cache backend**:
+        <div class="cmd-block"># Buildx CLI cấu hình đẩy cache lên registry để lần sau kéo về dùng lại
+docker buildx build \\
+  --cache-from=type=registry,ref=myregistry.com/app:cache \\
+  --cache-to=type=registry,ref=myregistry.com/app:cache,mode=max \\
+  -t myregistry.com/app:latest --push .</div>
+        <br>Hoặc tối ưu hóa dependencies cài đặt trong Dockerfile bằng cách dùng **Cache Mounts** để giữ lại thư mục cache của package manager qua các lần build:
+        <div class="cmd-block"># Cache thư mục .npm để lần sau không tải lại
+RUN --mount=type=cache,target=/root/.npm npm ci</div>
+      </li>
+    </ul>
   `,
 
   'docker-watchtower': `
