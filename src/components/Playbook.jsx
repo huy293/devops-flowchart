@@ -211,7 +211,7 @@ const guideContent = {
       <li><strong>Cơ chế Copy-on-Write (CoW):</strong> Nếu container cần sửa đổi một file đã có trong lớp Image, Docker sẽ nhân bản file đó từ lớp chỉ đọc lên lớp ghi được (Container Layer) rồi mới tiến hành sửa đổi. File gốc ở lớp dưới hoàn toàn nguyên vẹn. Khi container bị xóa, toàn bộ lớp Writable Layer này sẽ biến mất theo.</li>
     </ul>
 
-    <div class="guide-section-title">📝 4. Hướng Dẫn Chi Tiết Các Chỉ Chỉ Trong Dockerfile</div>
+    <div class="guide-section-title">📝 4. Hướng Dẫn Chi Tiết Các Chỉ Thị Trong Dockerfile</div>
     <p>Viết Dockerfile giống như việc lập trình môi trường. Dưới đây là giải nghĩa cặn kẽ các chỉ thị quan trọng nhất:</p>
     <ul>
       <li><strong>FROM:</strong> Định nghĩa Image nền tảng. Khuyên dùng các tag có phiên bản cụ thể kèm hậu tố \`alpine\` (ví dụ: \`node:22-alpine\`) để giảm thiểu size và hạn chế các lỗ hổng bảo mật không cần thiết.</li>
